@@ -22,10 +22,10 @@ This BSP supports the following boards:
 2. Change History
 =================
 
-  - 2025/01 (LINUXPG-2478): Wind River Linux LTS24 RCPL5: Add BSP support for Versal VMK180 based on
-			   Xilinx SDK 2024.02
-  - 2025/02 (LINUXPG-2479): Wind River Linux LTS24 RCPL6: Add BSP support for Versal VCK190 based on
-			   Xilinx SDK 2024.02
+  - 2025/11 (LINUXPG-2799): Wind River Linux LTS25 RCPL3: Add BSP support for Versal VCK190 based on
+			   Xilinx SDK 2025.01
+  - 2025/11 (LINUXPG-2800): Wind River Linux LTS25 RCPL3: Add BSP support for Versal VMK180 based on
+			   Xilinx SDK 2025.01
 
 3. BSP Features
 ===============
@@ -36,53 +36,66 @@ This BSP supports the following boards:
 The following BSP features are validated and supported on boards where
 the corresponding h/w features exist.
 
+  o CPU
+	+ VCK190: Xilinx Versal ACAP XCVC1902
+	+ VMK180: Xilinx Versal ACAP XCVM1802
+
+  o Memory
+	+ DDR: 8GB DDR4 (1 x MTA9ADF1G72AZ)
+	+ LPDDR: 8GB LPDDR4 (4 x MT53D512M32D2DS)
+
   o Bus
-	+ CANFD: Xilinx CANFD
-	+ I2C: Cadence (Only i2c@ff030000)
-	+ QSPI: ZynqMP QSPI
-	+ USB: Host/Gadget
+	+ I2C: On-Chip I2C Controller (Only i2c@ff030000)
+	+ QuadSPI: On-Chip Quad-SPI controller
+	+ USB 2.0: DWC3 USB Controller
 
   o Network
-	+ MACB: Gigabits Controller
-	+ PHY: Fixed MDIO
+	+ CANFD: On-CHip CANFD controller
+	+ Ethernet: GEM MAC
+		+ PHY: TI DP83867ISRGZ Ethernet SGMII PHY
 
   o Storage
-	+ NOR Flash: N25Q00A 256MB(X-EBM-01)
-	+ SD/MMC
-	+ EEPROM(M24128-BR)
+	+ QSPI NOR Flash: 2x1Gb MT25QU01GBBB8E112 (X-EBM-01 daughter card)
+	+ SD/MMC: On-Chip SD/SDIO/eMMC Controller
+	+ EEPROM: M24128-BR
 
   o Power Mgmt
-	+ CPU hotplug
+	+ CPU Hotplug
 	+ CPU Frequency
+	+ CPU IDLE:
+		+ WFI
+		+ cpu-sleep-0
+	+ Suspend/Resume:
+		+ Suspend: Suspend-to-RAM
+		+ Resume: RTC/Serial/Network Wakeup Source
 
   o Misc Devices
-	+ GPIO: On-Chip general purpose I/O peripheral
-	+ INA2xx
-	+ RTC
-	+ UART
-	+ Watchdog
-	+ LPD DMA
-	+ System Monitor
+	+ GPIO: PMC GPIO Controller
+	+ RTC: On-Chip Real Time Clock
+	+ UART: On-Chip UART Controller
+	+ DMA Engine: LPD DMA Controller
+	+ FPGA: FPGA Manager
+	+ SYSMON: PMBUS Monitor INA226
+	+ Watchdog: System Watchdog
 
 3.2 Unsupported Features
 ------------------------
 
 The following features are not supported and not validated:
 
+  x Counter: Triple-timer counter (TTC)
+  x IOMMU: SMMU Memory Management (SMMU-500)
+  x PCIe Endpoint 8-lane edge connector
+  x I2C: i2c@ff020000 I2C Controller
+  x RNG: Versal TRNG
+  x FMC: FMC+ Connector (PL-side)
+  x HDMI: HDMI RX/TX Connector (PL-side)
+  x GEM IEEE 1588
+  x zQSFP connector (PL-side)
+  x zSFP/zSFP+ (1x2 stacked) connector (PL-side)
   x AI Engine
-  x EDAC
-  x Xilinx Pinmux
-  x Cadence TTC
-  x Suspend-To-RAM
-  x TCA6416
-  x CPU IDLE
-  x Two HDMI ports
-  x 1x2 zSFP/SFP+ connector
-  x 1 zQSFP connector
-  x SMMU
-  x FPGA Mezzanine Card Interface
-  x 8-lane PCIe edge connector
-  x Cadence I2C (i2c@ff020000)
+  x EDAC: Xilinx DDR ECC controller
+  x GPIO: PMC GPIO Controller
 
 4. BSP Notes
 ============
@@ -97,10 +110,10 @@ VCK190:
 	Processor:              Versal VC1902
 	Board Revision:	        EK-VCK190-G-ED
 	BootLoader:             U-Boot
-	BootLoader Version:     U-Boot 2024.01
+	BootLoader Version:     U-Boot 2025.01
 
 VMK180:
 	Processor:              Versal VM1802
 	Board Revision:	        EK-VMK180-G-ED
 	BootLoader:             U-Boot
-	BootLoader Version:     U-Boot 2024.01
+	BootLoader Version:     U-Boot 2025.01
