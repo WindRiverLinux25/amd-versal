@@ -1,1 +1,5 @@
 IMAGE_INSTALL += "can-utils"
+IMAGE_INSTALL += "mtd-utils"
+IMAGE_INSTALL += "libgpiod-tools"
+IMAGE_INSTALL += "i2c-tools"
+IMAGE_INSTALL += "pm-utils"
