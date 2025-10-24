@@ -82,8 +82,8 @@ Note: The preempt-rt ktype is available for this BSP/Machine at this time.
 To get a list of patches applied to the kernel specific to this BSP along with
 patch descriptions use git-whatchanged on the default kernel. For example:
 
-	%> cd tmp-glibc/work-shared/<bsp_name>/kernel-source
-	%> git whatchanged <kernel_version>/standard/base..<kernel_version>/standard/<bsp_name>
+	(build-host)$ cd <PROJECT_DIR>/build/tmp/work-shared/<bsp_name>/kernel-source
+	(build-host)$ git whatchanged <kernel_version>/standard/base..<kernel_version>/standard/<bsp_name>
 
 
 4. Boot Instructions
@@ -108,19 +108,20 @@ The device tree files and their target boards are listed below:
 	versal-vck190-rev1.1-x-ebm-01-revA.dtb (used for vck190 with X-EBM-01 daughter card)
 	versal-vmk180-rev1.1-x-ebm-01-revA.dtb (used for vmk180 with X-EBM-01 daughter card)
 
-They will be installed to <DEPLOY_DIR> and the first partition of the WIC
-image along with the kernel Image.
+They will be installed to <PROJECT_DIR>/build/tmp/deploy/images/amd-versal/
+and the first partition of the WIC image along with the kernel Image.
 
 The device tree source files are located at:
-	tmp/work-shared/amd-versal/kernel-source/arch/arm64/boot/dts/xilinx
+	<PROJECT_DIR>/build/tmp/work-shared/amd-versal/kernel-source/arch/arm64/boot/dts/xilinx
 
 They can be modified and compiled by executing the following commands:
-	# bitbake -c devshell virtual/kernel
-	# vim arch/arm64/boot/dts/xilinx/the_file_you_edit*.dts
-	# make xilinx/dtb-file-name
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ bitbake -c devshell virtual/kernel
+	(build-host)$ vim arch/arm64/boot/dts/xilinx/the_file_you_edit*.dts
+	(build-host)$ make xilinx/dtb-file-name
 
 Then the new dtb files can be found at:
-	tmp/work/amd_versal-wrs-linux/linux-yocto/<version>/linux-amd_versal-standard-build/arch/arm64/boot/dts/xilinx/
+	<PROJECT_DIR>/build/tmp/work/amd_versal-wrs-linux/linux-yocto/<kernel_version>/linux-amd_versal-standard-build/arch/arm64/boot/dts/xilinx/
 
 4.1.2 system.dtb
 ----------------
@@ -131,8 +132,9 @@ https://github.com/Xilinx/device-tree-xlnx.git and Programming Logic dtsi file
 pl.dtsi which is extracted from the Xilinx Support Archive(xsa) file.
 
 If "DISTRO_FEATURES:append = ' xilinx-bootloader'" is added to conf/local.conf,
-the device-tree recipe will generate system.dtb, install it to <DEPLOY_DIR>
-and the first partition of the WIC image.
+the device-tree recipe will generate system.dtb, install it to
+<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/ and the first partition of
+the WIC image.
 
 The system.dtb should be used as long as the system involves FPGA implementation.
 
@@ -142,13 +144,13 @@ The system.dtb should be used as long as the system involves FPGA implementation
 4.1.1 Setup configuration your NFS TFTP server, and deploy the rootfs tarball
 -----------------------------------------------------------------------------
 
-	# sudo tar jxf wrlinux-image-std-amd-versal.tar.bz2 -C path_to_rootfs
+	(build-host)$ sudo tar jxf wrlinux-image-std-amd-versal.tar.bz2 -C <path_to_rootfs>
 
 4.1.2 Set the u-boot environment variables and boot from NFS
 ------------------------------------------------------------
 
-	=> setenv bootargs console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused root=/dev/nfs rw nfsroot=serverip:path_root_rootfs ip=dhcp
-	=> tftpboot 0x10000000 Image; tftpboot 0x13800000 dtb; booti 0x10000000 - 0x13800000
+	(u-boot)> setenv bootargs console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused root=/dev/nfs rw nfsroot=serverip:<path_root_rootfs> ip=dhcp
+	(u-boot)> tftpboot 0x10000000 Image; tftpboot 0x13800000 dtb; booti 0x10000000 - 0x13800000
 
 5. WIC Notes
 ============
@@ -162,9 +164,9 @@ https://docs.yoctoproject.org/singleindex.html#creating-partitioned-images-using
 
 This BSP supports disk images for SD card.
 After building the project, user will get a WIC image under the directory
-tmp-glibc/deploy/images/<bsp name>/, such as:
+tmp/deploy/images/<bsp name>/, such as:
 
-	<path_to_your_project>/tmp-glibc/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic
+	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic
 
 NOTE: The WIC image built in WRLinux don't contain the bootloader BOOT.BIN
 by default. Please refer to section 6 for the detailed description to create
@@ -175,20 +177,17 @@ a bootable WIC image.
 
 To burn WIC image to SD card, user only need to execute the below command:
 
-	# dd if=wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic of=/dev/your_sd_dev
+	(build-host)$ sudo dd if=wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic of=/dev/your_sd_dev
 
 5.2 Boot the board from the WIC SD card
 ---------------------------------------
 
 The board can boot automatically by setting the following uboot environment variables:
 
-=> setenv bootfile Image; setenv fdtfile dtb-file-name; setenv loadaddr 0x10000000; setenv fdtaddr 0x18800000;
-
-=> setenv bootargs 'root=/dev/mmcblk0p2 rw console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused rootwait'
-
-=> setenv bootcmd 'fatload mmc 0:1 $loadaddr $bootfile; fatload mmc 0:1 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr';
-
-=> saveenv; run bootcmd;
+	(u-boot)> setenv bootfile Image; setenv fdtfile dtb-file-name; setenv loadaddr 0x10000000; setenv fdtaddr 0x18800000;
+	(u-boot)> setenv bootargs 'root=/dev/mmcblk0p2 rw console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused rootwait'
+	(u-boot)> setenv bootcmd 'fatload mmc 0:1 $loadaddr $bootfile; fatload mmc 0:1 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr';
+	(u-boot)> saveenv; run bootcmd;
 
 
 6. Features
@@ -205,22 +204,20 @@ BOOT.BIN is the bootloader for VMK180/VCK190 boards. There are two ways to gener
 Run the following steps to generate BOOT.BIN, here we take VMK180 for instance, if the BOOT.BIN
 is for VCK190 board, please substitute vck190-versal for vmk180-versal:
 
-	$ git clone https://github.com/Xilinx/soc-prebuilt-firmware.git
-	$ cd soc-prebuilt-firmware
-	$ git checkout xlnx_rel_v2024.2
-	$ cd vmk180-versal
-	$ source <path_to_Vivado>/2024.2/settings64.sh
-	$ bootgen -arch versal -image bootgen.bif -o ./BOOT.BIN -w
+	(build-host)$ git clone https://github.com/Xilinx/soc-prebuilt-firmware.git
+	(build-host)$ cd soc-prebuilt-firmware
+	(build-host)$ git checkout xlnx_rel_v2024.2
+	(build-host)$ cd vmk180-versal
+	(build-host)$ source <path_to_Vivado>/2024.2/settings64.sh
+	(build-host)$ bootgen -arch versal -image bootgen.bif -o ./BOOT.BIN -w
 
 And the BOOT.BIN can be installed into the WIC image:
 
-	$ cd path_of_project
-	$ . ./environment-setup-x86_64-wrlinuxsdk-linux
-	$ . ./oe-init-build-env
-	$ cat << _EOF >> conf/local.conf
-IMAGE_BOOT_FILES:append = " /< path-to-BOOT.BIN >/BOOT.BIN;BOOT.BIN"
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+IMAGE_BOOT_FILES:append = " /< path_to_BOOT.BIN >/BOOT.BIN;BOOT.BIN"
 _EOF
-	$ bitbake wrlinux-image-std
+	(build-host)$ bitbake wrlinux-image-std
 
 6.1.2 Build BOOT.BIN in WRLinux
 -------------------------------
@@ -228,10 +225,8 @@ Besides the above method which uses prebuilt firmwares to generate BOOT.BIN,
 WRLinux can build BOOT.BIN and create a bootable WIC image by following the
 steps as below:
 
-	$ cd path_of_project
-	$ . ./environment-setup-x86_64-wrlinuxsdk-linux
-	$ . ./oe-init-build-env
-	$ cat << _EOF >> conf/local.conf
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
 CUSTOMER_RECIPES:xilinx += 'bootgen'
 CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx-scr'
 CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx'
@@ -254,30 +249,33 @@ BB_NO_NETWORK = '0'
 VERSAL_TARGET_BOARD = "vmk180"
 DISTRO_FEATURES:append = " xilinx-bootloader"
 _EOF
-	$ bitbake wrlinux-image-std
+	(build-host)$ bitbake wrlinux-image-std
 
 After building project, a partitioned WIC image will be created in the deploy folder as follows:
 
-  path_to_your_project/build/tmp-glibc/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.wic
+	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.wic
 
 6.2 kexec and kdump
 -------------------
 
 You need to add feature/kexec support as follow:
-	./wrlinux-x/setup.sh --machines amd-versal --templates feature/kexec,feature/kdump
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+WRTEMPLATE = "feature/kexec,feature/kdump"
+_EOF
 
 6.2.1 kexec
 -----------
 
-	kexec -l  /boot/Image --append="`cat /proc/cmdline`"
-	kexec -e
+	root@amd-versal:~# kexec -l  /boot/Image --append="`cat /proc/cmdline`"
+	root@amd-versal:~# kexec -e
 
 6.2.2 kdump
 -----------
 
 Add crashkernel=512M to the kernel cmdline
-	kexec -p /boot/Image --append="$your-bootcmd"
-	echo c > /proc/sysrq-trigger
+	root@amd-versal:~# kexec -p /boot/Image --append="$your-bootcmd"
+	root@amd-versal:~# echo c > /proc/sysrq-trigger
 
 6.3 System Monitor
 ------------------
@@ -287,7 +285,7 @@ Each system monitor measures voltage and temperature to provide information and 
 to other parts of the system including the PMU, RPU, and APU processors.
 
 Customer could check the detail system monitor interfaces with below command:
-	# ls -la /sys/bus/iio/devices/iio:device0
+	root@amd-versal:~# ls -la /sys/bus/iio/devices/iio:device0
 
 6.4 QSPI
 --------
@@ -297,7 +295,7 @@ the X-EBM-01 card is installed on J212 of the VCK190/VMK180 boards. And should u
 file versal-vck190-rev1.1-x-ebm-01-revA.dtb for vck190 board or versal-vmk180-rev1.1-x-ebm-01-revA.dtb
 for VMK180 board which can be found at the path:
 
-path_to_your_project/build/tmp-glibc/deploy/images/amd-versal/
+	<PROJECT_DIR>/build/tmp-glibc/deploy/images/amd-versal/
 
 6.5 CANFD
 ---------
@@ -306,15 +304,15 @@ There is one canfd device interface J5 at board. Connect the canfd interfaces of
 the following verification commands:
 
 VCK190/VMK180 board-1:
-	# ip link set can0 up type can bitrate 125000 dbitrate 8000000 fd on
-	# candump can0 &
-	# ip -d -s link show can0
+	root@amd-versal:~# ip link set can0 up type can bitrate 125000 dbitrate 8000000 fd on
+	root@amd-versal:~# candump can0 &
+	root@amd-versal:~# ip -d -s link show can0
 
 VCK190/VMK180 board-2:
-	# ip link set can0 up type can bitrate 125000 dbitrate 8000000 fd on
-	# cansend can0 5A1#11.22.33.44.55.66.77.88
-	# cansend can0 5A1##000112233445566778899aabbccddeeff
-	# ip -d -s link show can0
+	root@amd-versal:~# ip link set can0 up type can bitrate 125000 dbitrate 8000000 fd on
+	root@amd-versal:~# cansend can0 5A1#11.22.33.44.55.66.77.88
+	root@amd-versal:~# cansend can0 5A1##000112233445566778899aabbccddeeff
+	root@amd-versal:~# ip -d -s link show can0
 
 If can0 at board-1 can dump data from board-2, CANFD feature works fine.
 
@@ -340,29 +338,29 @@ For Device mode, open the jumper 1-2 of J308:
 In addition to the method which modifies "dr_mode" property in dts file, you can change this property
 by using "fdt" u-boot command. The example for USB device mode is as described below:
 
-    => tftpboot 0x10000000 Image; tftpboot 0x18800000 dtb
-    => fdt addr 0x18800000; fdt resize; fdt set /axi/usb@ff9d0000/usb@fe200000 dr_mode peripheral
-    => booti 0x10000000 - 0x18800000
+    (u-boot)> tftpboot 0x10000000 Image; tftpboot 0x18800000 dtb
+    (u-boot)> fdt addr 0x18800000; fdt resize; fdt set /axi/usb@ff9d0000/usb@fe200000 dr_mode peripheral
+    (u-boot)> booti 0x10000000 - 0x18800000
 
 Use the below example settings for configuring USB as MASS STORAGE profile to verify the device mode:
 
-	root@amd-versal:~#dd if=/dev/zero of=/tmp/mydev count=500 bs=1M
-	root@amd-versal:~#cd /sys/kernel/config/usb_gadget
-	root@amd-versal:~#mkdir g1
-	root@amd-versal:~#cd g1
-	root@amd-versal:~#echo "64" > bMaxPacketSize0
-	root@amd-versal:~#echo "0x200" > bcdUSB
-	root@amd-versal:~#echo "0x100" > bcdDevice
-	root@amd-versal:~#echo "0x03FD" > idVendor
-	root@amd-versal:~#echo "0x0501" > idProduct
-	root@amd-versal:~#cat max_speed
-	root@amd-versal:~#echo "high-speed" > max_speed
-	root@amd-versal:~#mkdir functions/mass_storage.ms0
-	root@amd-versal:~#mkdir configs/c1.1
-	root@amd-versal:~#echo /tmp/mydev > functions/mass_storage.ms0/lun.0/file
-	root@amd-versal:~#echo 1 > functions/mass_storage.ms0/lun.0/removable
-	root@amd-versal:~#ln -s functions/mass_storage.ms0/ configs/c1.1/
-	root@amd-versal:~#echo "fe200000.usb" > UDC
+	root@amd-versal:~# dd if=/dev/zero of=/tmp/mydev count=500 bs=1M
+	root@amd-versal:~# cd /sys/kernel/config/usb_gadget
+	root@amd-versal:~# mkdir g1
+	root@amd-versal:~# cd g1
+	root@amd-versal:~# echo "64" > bMaxPacketSize0
+	root@amd-versal:~# echo "0x200" > bcdUSB
+	root@amd-versal:~# echo "0x100" > bcdDevice
+	root@amd-versal:~# echo "0x03FD" > idVendor
+	root@amd-versal:~# echo "0x0501" > idProduct
+	root@amd-versal:~# cat max_speed
+	root@amd-versal:~# echo "high-speed" > max_speed
+	root@amd-versal:~# mkdir functions/mass_storage.ms0
+	root@amd-versal:~# mkdir configs/c1.1
+	root@amd-versal:~# echo /tmp/mydev > functions/mass_storage.ms0/lun.0/file
+	root@amd-versal:~# echo 1 > functions/mass_storage.ms0/lun.0/removable
+	root@amd-versal:~# ln -s functions/mass_storage.ms0/ configs/c1.1/
+	root@amd-versal:~# echo "fe200000.usb" > UDC
 
 Connect the cable from board to Windows or Linux host machine, and the mass storage device
 can be observed.
