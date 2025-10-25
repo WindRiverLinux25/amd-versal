@@ -399,3 +399,178 @@ VERSAL_TARGET_BOARD = "vmk180"
 DISTRO_FEATURES:append = " xilinx-bootloader"
 _EOF
 	(build-host)$ bitbake wrlinux-image-std
+
+7.2 Workflows
+-------------
+When customers complete their system designs via Vivado/Vitis, an XSA
+file is generated. The XSA (Xilinx Shell Archive) file is a container
+that describes a hardware platform. This file can be used to generate
+necessary hardware and software components that are then integrated
+into a Yocto-based Linux build through XSCT/SDT workflows.
+
+According to how the Programmable Logic (PL) portion of the XSA is
+structured and reconfigured, the XSA files can be divided into three
+types:
+	-Flat Configuration
+	-Segment Configuration
+	-Dynamic Function eXchange(DFX)
+Different XSA types will lead to different steps for each workflow.
+
+The DFX XSA is NOT supported by both workflows yet.
+
+This section will use the VCK190 board as an example. For the VMK180 board,
+just replace the string "vck190" in the command lines with "vmk180".
+
+Note that AMD is phasing out the XSCT workflow in favor of the SDT workflow
+for new projects. Therefore, we strongly recommend that customers switch
+to the SDT workflow as soon as possible.
+
+7.2.1 gen-machineconf
+---------------------
+Both XSCT and SDT workflows require the use of the tool gen-machineconf.
+For a more detailed description of gen-machineconf, please see
+	https://github.com/Xilinx/gen-machine-conf/blob/rel-v2025.1/README.md
+
+7.2.2 XSCT Workflow
+-------------------
+The XSCT workflow requires an XSA file as input. For a more detailed description
+of the XSCT workflow with Yocto, please see
+	https://github.com/Xilinx/meta-xilinx-tools/blob/rel-v2025.1/README.xsct.bsp.md
+
+Executing the following commands to start the XSCT workflow:
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+CUSTOMER_RECIPES:openembedded-layer += 'kconfig-frontends'
+CUSTOMER_RECIPES:meta-python += 'python3-humanfriendly'
+CUSTOMER_RECIPES:virtualization-layer += 'lopper'
+CUSTOMER_RECIPES:xilinx += 'python3-anytree'
+CUSTOMER_RECIPES:xilinx += 'xilinx-lops'
+CUSTOMER_RECIPES:xilinx-standalone += 'esw-conf'
+CUSTOMER_RECIPES:xilinx-tools += 'xsct'
+CUSTOMER_RECIPES:xilinx-standalone += 'embeddedsw-source'
+CUSTOMER_RECIPES:xilinx += 'bootgen'
+CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx-scr'
+CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx'
+CUSTOMER_RECIPES:xilinx += 'xilinx-bootbin'
+CUSTOMER_RECIPES:xilinx += 'psmfw'
+CUSTOMER_RECIPES:xilinx += 'plmfw'
+CUSTOMER_RECIPES:xilinx += 'base-pdi'
+CUSTOMER_RECIPES:xilinx += 'extract-cdo'
+CUSTOMER_RECIPES:xilinx += 'trusted-firmware-a'
+CUSTOMER_RECIPES:xilinx += 'device-tree'
+CUSTOMER_RECIPES:xilinx-tools += 'external-hdf'
+CUSTOMER_RECIPES:xilinx-standalone += 'psm-firmware'
+CUSTOMER_RECIPES:xilinx-standalone += 'plm-firmware'
+CUSTOMER_RECIPES:xilinx += 'u-boot-tools-xlnx'
+PREFERRED_PROVIDER_u-boot-tools-native = "u-boot-tools-xlnx-native"
+VERSAL_TARGET_BOARD = "vck190"
+DISTRO_FEATURES:append = " xilinx-bootloader"
+XILINX_WITH_ESW = "xsct"
+BB_NO_NETWORK = '0'
+_EOF
+	(build-host)$ export PATH=$PATH:<PROJECT_DIR>/layers/meta-xilinx/gen-machine-conf/
+
+For the Flat Configuration XSA, you need execute:
+	(build-host)$ gen-machineconf parse-xsa --hw-description <path_to_xsa-file/proj-flat.xsa> -c conf/ --machine-name versal-vck190-xsct --add-config CONFIG_SUBSYSTEM_MACHINE_NAME=\"versal-vck190-reva-x-ebm-01-reva\"
+	(build-host)$ cat << _EOF >> conf/local.conf
+WORKFLOW_MACHINE_NAME = "versal-vck190-xsct"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
+
+For the Segment Configuration XSA:
+	(build-host)$ gen-machineconf parse-xsa --hw-description <path_to_xsa-file/proj-seg.xsa> -c conf/ --machine-name versal-vck190-xsct-seg --add-config CONFIG_SUBSYSTEM_MACHINE_NAME=\"versal-vck190-reva-x-ebm-01-reva\" --add-config CONFIG_SUBSYSTEM_FPGA_MANAGER=y
+	(build-host)$ cat << _EOF >> conf/local.conf
+WORKFLOW_MACHINE_NAME = "versal-vck190-xsct-seg"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
+
+NOTE:
+If you need to re-run gen-machineconf under an old project, you must clean
+the old project first:
+	(build-host)$ bitbake -c clean device-tree base-pdi psm-firmware plm-firmware
+	(build-host)$ rm conf/machine -Rf; rm output -Rf; rm conf/dts -Rf; rm hw-description -Rf
+	(build-host)$ sed -i '/WORKFLOW_MACHINE_NAME/d' conf/local.conf
+And after re-running the gen-machineconf command, don't forget to add
+WORKFLOW_MACHINE_NAME back to conf/local.conf according to the type of
+XSA file.
+
+7.2.3 SDT Workflow
+------------------
+The SDT workflow uses the output of "SDTGen" as input. For a more detailed
+description of the SDT workflow with Yocto, please see
+	https://github.com/Xilinx/meta-xilinx/blob/rel-v2025.1/meta-xilinx-standalone-sdt/README.sdt.bsp.md
+
+The System Device Tree Generator (SDTGen) is a tool designed by AMD to convert
+it’s proprietary output formats from the AMD Vivado Design Suite into a
+comprehensive system device tree.
+For a more detailed description of sdtgen, please see
+	https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/3156475927/Overview+of+System+Device+Tree+Generator+SDTGen
+
+The following commands should be executed at a "build-host" with Vivado installed:
+	(build-host)$ mkdir <my-project-dir>
+	(build-host)$ cat << _EOF >> sdt.tcl
+set outdir [lindex $argv 1]
+set xsa [lindex $argv 0]
+exec rm -rf $outdir
+sdtgen set_dt_param -zocl enable -debug enable -xsa $xsa -dir $outdir -board_dts versal-vck190-reva-x-ebm-01-reva
+sdtgen generate_sdt
+_EOF
+	(build-host)$ xsct sdt.tcl <path_to_xsa-file/project.xsa> <my-project-dir>
+
+Make sure that the folder <my-project-dir> is placed where WRLinux can access it
+and start SDT workflow by executing the following commands:
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+CUSTOMER_RECIPES:openembedded-layer += 'kconfig-frontends'
+CUSTOMER_RECIPES:meta-python += 'python3-humanfriendly'
+CUSTOMER_RECIPES:virtualization-layer += 'lopper'
+CUSTOMER_RECIPES:xilinx += 'python3-anytree'
+CUSTOMER_RECIPES:xilinx += 'xilinx-lops'
+CUSTOMER_RECIPES:xilinx-standalone += 'esw-conf'
+CUSTOMER_RECIPES:xilinx-standalone += 'embeddedsw-source'
+CUSTOMER_RECIPES:xilinx += 'bootgen'
+CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx-scr'
+CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx'
+CUSTOMER_RECIPES:xilinx += 'xilinx-bootbin'
+CUSTOMER_RECIPES:xilinx += 'psmfw'
+CUSTOMER_RECIPES:xilinx += 'plmfw'
+CUSTOMER_RECIPES:xilinx += 'base-pdi'
+CUSTOMER_RECIPES:xilinx += 'extract-cdo'
+CUSTOMER_RECIPES:xilinx += 'trusted-firmware-a'
+CUSTOMER_RECIPES:xilinx += 'device-tree'
+CUSTOMER_RECIPES:xilinx-standalone += 'psm-firmware'
+CUSTOMER_RECIPES:xilinx-standalone += 'plm-firmware'
+CUSTOMER_RECIPES:xilinx += 'u-boot-tools-xlnx'
+CUSTOMER_RECIPES:xilinx-standalone-sdt += 'sdt-artifacts aiefal aienginev2 audio-formatter avbuf axicdma axicdma-example axidma axidma-example axiethernet axiethernet-example axipcie axipmon axipmon-example axis-switch axivdma axivdma-example bram bram-example can can-example canfd canfd-example canps canps-example cframe cfupmc clk-wiz clk-wiz-example clockps clockps-example common coresightps-dcc csi csi2tx csi2txss csudma csudma-example dcsub ddrcpsu devcfg devcfg-example dfeccf dfeccf-example dfeequ dfeequ-example dfemix dfemix-example dfeofdm dfeofdm-example dfeprach dfeprach-example dfxasm dfxasm-example dmaps dmaps-example dp12 dp12rxss dp12txss dp14 dp14rxss dp14txss dp21 dp21rxss dp21txss dpdma dphy dppsu dsi dsi2rx dsirxss dsitxss dual-splitter emaclite emaclite-example emacps emacps-example emc gpio gpio-example gpiops gpiops-example hdcp1x hdcp22-cipher hdcp22-cipher-dp hdcp22-common hdcp22-mmult hdcp22-rng hdcp22-rx hdcp22-rx-dp hdcp22-tx hdcp22-tx-dp hwicap i2srx i2stx i3c i3cpsx i3cpsx-example iic iic-example iicps iicps-example intc intc-example iomodule ipipsu ipipsu-example llfifo llfifo-example mbox mboxpsu-exampmcdma mcdma-example mipicsiss mipi-rx-phy mipi-tx-phy mmidp mutex mutex-example nandps nandpsu nandpsu-example ospipsv ospipsv-example pciepsu pciepsu-example prc prd qspips qspips-example qspipsu qspipsu-example resetps resetps-example rfdc rfdc-example rtcpsu rtcpsu-example scugic scugic-example scutimer scuwdt sd-fec sdiaud sdi-common sdps sdps-example spdif spi spips spips-example sysmon sysmon-example sysmonpsu sysmonpsu-example sysmonpsv sysmonpsv-example tft tmrctr tmrctr-example tmr-inject tmr-manager trafgen trafgen-example trngpsv trngpsx ttcps ttcps-example uartlite uartlite-example uartns550 uartns550-example uartps uartps-example uartpsv uartpsv-example ufspsxc usb usb-example usbps usbpsu usbpsu-example v-axi4s-remap v-csc v-deinterlacer v-demosaic v-demosaict v-gamma-lfrmbuf-rd v-frmbuf-rd-example v-frmbuf-wr v-frmbuf-wr-example v-gamma-lut v-gamma-lut-example v-hcresampler v-hdmi-common v-hdmiphy1 v-hdmirx1 v-hdmirx v-hdmirxss1 v-hdmirxss v-hdmitx1 v-hdmitx v-hdmitxss1 v-hdmitxss v-hscaler video-common visp-ss v-letterbox v-mix v-mix-example v-multi-scaler v-multi-scaler-example vphy vprocss vprocss-example v-scenechange v-scenechange-example v-sdirx v-sdirxss v-sditx v-sditxss vtc v-tpg v-vcresampler v-vscaler v-warp-filter v-warp-init wdtps wdtps-example wdttb wdttb-example xadcps xadcps-example xdmapcie xdmapcie-example xxvethernet xxvethernet-example zdma zdma-example libxil lwip xilasu xilcert xilffs xilffs-example xilfpga xilfpga-example xilloader xilmailbox xilmailbox-example xilnvm xilnvm-example xilocp xilpdi xilplmi xilpm xilpm-ng xilpuf xilpuf-example xilrsa xilsecure xilsecure-example xilsem xilskey xilskey-example xilstandalone xiltimer'
+PREFERRED_PROVIDER_u-boot-tools-native = "u-boot-tools-xlnx-native"
+VERSAL_TARGET_BOARD = "vck190"
+DISTRO_FEATURES:append = " xilinx-bootloader"
+XILINX_WITH_ESW = "sdt"
+BB_NO_NETWORK = '0'
+_EOF
+	(build-host)$ export PATH=$PATH:<PROJECT_DIR>/layers/meta-xilinx/gen-machine-conf/
+
+For Flat Configuration
+	(build-host)$ gen-machineconf parse-sdt --hw-description <path_to_dir/my-project-dir> -c conf/ --machine-name versal-vck190-sdt --add-config CONFIG_SUBSYSTEM_MACHINE_NAME=\"versal-vck190-reva-x-ebm-01-reva\"
+	(build-host)$ cat << _EOF >> conf/local.conf
+WORKFLOW_MACHINE_NAME = "versal-vck190-sdt"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
+
+For Segment Configuration
+	(build-host)$ gen-machineconf parse-sdt --hw-description <path_to_dir/my-project-dir> -c conf/ --machine-name versal-vck190-sdt-seg --add-config CONFIG_SUBSYSTEM_MACHINE_NAME=\"versal-vck190-reva-x-ebm-01-reva\" -g full
+	(build-host)$ cat << _EOF >> conf/local.conf
+WORKFLOW_MACHINE_NAME = "versal-vck190-sdt-seg"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
+
+NOTE:
+If you need to re-run gen-machineconf under an old project, you must clear
+the project first:
+	(build-host)$ rm conf/machine -Rf; rm output -Rf; rm conf/dts -Rf; rm hw-description -Rf
+	(build-host)$ sed -i '/WORKFLOW_MACHINE_NAME/d' conf/local.conf
+And after re-running the gen-machineconf command, don't forget to add
+WORKFLOW_MACHINE_NAME back to conf/local.conf according to the type of
+XSA file.
