@@ -193,69 +193,7 @@ The board can boot automatically by setting the following uboot environment vari
 6. Features
 ===========
 
-6.1 Bootloader
---------------
-
-BOOT.BIN is the bootloader for VMK180/VCK190 boards. There are two ways to generate BOOT.BIN.
-
-6.1.1 Generate BOOT.BIN with prebuilt firmwares
------------------------------------------------
-
-Run the following steps to generate BOOT.BIN, here we take VMK180 for instance, if the BOOT.BIN
-is for VCK190 board, please substitute vck190-versal for vmk180-versal:
-
-	(build-host)$ git clone https://github.com/Xilinx/soc-prebuilt-firmware.git
-	(build-host)$ cd soc-prebuilt-firmware
-	(build-host)$ git checkout xlnx_rel_v2024.2
-	(build-host)$ cd vmk180-versal
-	(build-host)$ source <path_to_Vivado>/2024.2/settings64.sh
-	(build-host)$ bootgen -arch versal -image bootgen.bif -o ./BOOT.BIN -w
-
-And the BOOT.BIN can be installed into the WIC image:
-
-	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
-	(build-host)$ cat << _EOF >> conf/local.conf
-IMAGE_BOOT_FILES:append = " /< path_to_BOOT.BIN >/BOOT.BIN;BOOT.BIN"
-_EOF
-	(build-host)$ bitbake wrlinux-image-std
-
-6.1.2 Build BOOT.BIN in WRLinux
--------------------------------
-Besides the above method which uses prebuilt firmwares to generate BOOT.BIN,
-WRLinux can build BOOT.BIN and create a bootable WIC image by following the
-steps as below:
-
-	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
-	(build-host)$ cat << _EOF >> conf/local.conf
-CUSTOMER_RECIPES:xilinx += 'bootgen'
-CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx-scr'
-CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx'
-CUSTOMER_RECIPES:xilinx += 'xilinx-bootbin'
-CUSTOMER_RECIPES:xilinx += 'psmfw'
-CUSTOMER_RECIPES:xilinx += 'plmfw'
-CUSTOMER_RECIPES:xilinx += 'base-pdi'
-CUSTOMER_RECIPES:xilinx += 'extract-cdo'
-CUSTOMER_RECIPES:xilinx += 'trusted-firmware-a'
-CUSTOMER_RECIPES:xilinx += 'device-tree'
-CUSTOMER_RECIPES:xilinx-tools += 'external-hdf'
-CUSTOMER_RECIPES:xilinx-standalone += 'psm-firmware'
-CUSTOMER_RECIPES:xilinx-standalone += 'plm-firmware'
-CUSTOMER_RECIPES:xilinx-standalone += 'embeddedsw-source'
-CUSTOMER_RECIPES:xilinx += 'u-boot-tools-xlnx'
-PREFERRED_PROVIDER_u-boot-tools-native = "u-boot-tools-xlnx-native"
-CUSTOMER_RECIPES:xilinx-tools += 'xsct'
-BB_NO_NETWORK = '0'
-# change to "vck190" for vck190 board
-VERSAL_TARGET_BOARD = "vmk180"
-DISTRO_FEATURES:append = " xilinx-bootloader"
-_EOF
-	(build-host)$ bitbake wrlinux-image-std
-
-After building project, a partitioned WIC image will be created in the deploy folder as follows:
-
-	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.wic
-
-6.2 kexec and kdump
+6.1 kexec and kdump
 -------------------
 
 You need to add feature/kexec support as follow:
@@ -264,20 +202,20 @@ You need to add feature/kexec support as follow:
 WRTEMPLATE = "feature/kexec,feature/kdump"
 _EOF
 
-6.2.1 kexec
+6.1.1 kexec
 -----------
 
 	root@amd-versal:~# kexec -l  /boot/Image --append="`cat /proc/cmdline`"
 	root@amd-versal:~# kexec -e
 
-6.2.2 kdump
+6.1.2 kdump
 -----------
 
 Add crashkernel=512M to the kernel cmdline
 	root@amd-versal:~# kexec -p /boot/Image --append="$your-bootcmd"
 	root@amd-versal:~# echo c > /proc/sysrq-trigger
 
-6.3 System Monitor
+6.2 System Monitor
 ------------------
 
 System monitor includes PL monitor and PS monitor.
@@ -287,7 +225,7 @@ to other parts of the system including the PMU, RPU, and APU processors.
 Customer could check the detail system monitor interfaces with below command:
 	root@amd-versal:~# ls -la /sys/bus/iio/devices/iio:device0
 
-6.4 QSPI
+6.3 QSPI
 --------
 
 There are QSPI NOR Flash at the X-EBM-01 QSPI external daughter card, please make sure that
@@ -297,7 +235,7 @@ for VMK180 board which can be found at the path:
 
 	<PROJECT_DIR>/build/tmp-glibc/deploy/images/amd-versal/
 
-6.5 CANFD
+6.4 CANFD
 ---------
 
 There is one canfd device interface J5 at board. Connect the canfd interfaces of 2 boards and use
@@ -316,19 +254,19 @@ VCK190/VMK180 board-2:
 
 If can0 at board-1 can dump data from board-2, CANFD feature works fine.
 
-6.6 USB
+6.5 USB
 -------
 
 For VMK180/VCK190 board, the USB controller can be configured as host, device modes.
 
-6.6.1 USB Host
+6.5.1 USB Host
 --------------
 
 For Host mode, short the jumper 1-2 of J308:
 	J308
 	1-2 3
 
-6.6.2 USB Device
+6.5.2 USB Device
 ----------------
 
 For Device mode, open the jumper 1-2 of J308:
@@ -364,3 +302,100 @@ Use the below example settings for configuring USB as MASS STORAGE profile to ve
 
 Connect the cable from board to Windows or Linux host machine, and the mass storage device
 can be observed.
+
+
+7 Xilinx Specific Features
+==========================
+
+7.1 BOOT.BIN
+------------
+BOOT.BIN is the unified boot image format for AMD Versal ACAP
+(Adaptive Compute Acceleration Platform) devices. Versal introduces
+a revolutionary heterogeneous architecture combining scalar engines
+(ARM Cortex-A72/R5F), adaptable engines (programmable logic), and
+intelligent engines (AI Engine array), all managed through an advanced
+boot sequence.
+
+BOOT.BIN Detailed Structure:
+	BOOT.BIN
+	├── Boot Header
+	├── PLM (Platform Loader Manager)
+	├── PSM Firmware (Platform Security Manager)
+	├── Programming Device Image (PDI)
+	├── Configuration Data Objects (CDO)
+	├── AI Engine Partition (Optional)
+	├── ATF (ARM Trusted Firmware)
+	└── Application Processors
+	    └── U-Boot (Secondary bootloader)
+
+There are two ways to generate BOOT.BIN:
+	- Using prebuilt firmwares
+	- Using WRLinux
+
+7.1.1 Prebuilt Firmwares
+------------------------
+If you just need a bootable BOOT.BIN to boot Linux, but don't want to compile
+it, you can use the prebuilt firmwares provided by AMD to generate one directly.
+The following example shows the steps for generating BOOT.BIN for vmk180. The
+steps for vck190 are very similar.
+
+	(build-host)$ git clone https://github.com/Xilinx/soc-prebuilt-firmware.git
+	(build-host)$ cd soc-prebuilt-firmware
+	(build-host)$ git checkout xlnx_rel_v2025.1
+	(build-host)$ cd vmk180-versal
+	(build-host)$ bootgen -arch versal -image bootgen.bif -o ./BOOT.BIN -w
+
+The bootgen tool used above is in <path_to_Vivado>/bin/bootgen. If you don't
+have Vivado/Vitis installed, you can download the source code of bootgen, compile
+it, and then use it after installation.
+
+	(build-host)$ git clone https://github.com/Xilinx/bootgen.git
+	(build-host)$ cd bootgen; git checkout xlnx_rel_v2025.1
+	(build-host)$ make; make install
+
+The generated BOOT.BIN can be directly copied to the first FAT32 partition
+of the SD card or to be installed to the WIC image by executing the following
+steps:
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+IMAGE_BOOT_FILES:append = " /< path_to_BOOT.BIN >/BOOT.BIN;BOOT.BIN"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
+
+7.1.2 WRLinux
+-------------
+WRLinux uses the recipes from meta-xilinx to automate the entire process
+by building all required components, generating the appropriate BIF file
+and calling bootgen to create the final BOOT.BIN image.
+
+The following steps are to generate BOOT.BIN by using a default XSA file
+downloaded from AMD Website by the external-hdf recipe. And if customers
+own a customized XSA file which contains a specific FPGA implementation
+to generate a BOOT.BIN, please refer to the section "7.2 Workflows".
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+CUSTOMER_RECIPES:xilinx += 'bootgen'
+CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx-scr'
+CUSTOMER_RECIPES:xilinx += 'u-boot-xlnx'
+CUSTOMER_RECIPES:xilinx += 'xilinx-bootbin'
+CUSTOMER_RECIPES:xilinx += 'psmfw'
+CUSTOMER_RECIPES:xilinx += 'plmfw'
+CUSTOMER_RECIPES:xilinx += 'base-pdi'
+CUSTOMER_RECIPES:xilinx += 'extract-cdo'
+CUSTOMER_RECIPES:xilinx += 'trusted-firmware-a'
+CUSTOMER_RECIPES:xilinx += 'device-tree'
+CUSTOMER_RECIPES:xilinx-tools += 'external-hdf'
+CUSTOMER_RECIPES:xilinx-standalone += 'psm-firmware'
+CUSTOMER_RECIPES:xilinx-standalone += 'plm-firmware'
+CUSTOMER_RECIPES:xilinx-standalone += 'embeddedsw-source'
+CUSTOMER_RECIPES:xilinx += 'u-boot-tools-xlnx'
+PREFERRED_PROVIDER_u-boot-tools-native = "u-boot-tools-xlnx-native"
+CUSTOMER_RECIPES:xilinx-tools += 'xsct'
+BB_NO_NETWORK = '0'
+# change to "vck190" for vck190 board
+VERSAL_TARGET_BOARD = "vmk180"
+DISTRO_FEATURES:append = " xilinx-bootloader"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
