@@ -574,3 +574,105 @@ the project first:
 And after re-running the gen-machineconf command, don't forget to add
 WORKFLOW_MACHINE_NAME back to conf/local.conf according to the type of
 XSA file.
+
+7.3 Device Tree Overlay
+-----------------------
+The Device Tree Overlay(DTO) is used to add the child nodes and the fragments
+from the .dtbo file to the base device tree, then triggering drivers to be
+probed after PDI programming. So the dtbo file for PL needs to be installed
+to rootfs along with PDI files.
+
+7.3.1 SDT Segment Configuration
+-------------------------------
+The recipe "versal-fw-demo" in the amd-versal bsp layer is used to install
+dtbo file to WRLinux by utilizing the bbclass "dfx_user_dts". For a more
+detailed description of "dfx_user_dts", please see
+	https://github.com/Xilinx/meta-xilinx/blob/rel-v2025.1/docs/README.dfx.user.dts.md
+
+After running the steps in "7.2.3 SDT Workflow", execute the following commands:
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cp conf/dts/versal-vmk180-sdt-seg/pl-overlay-full/pl.dtsi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
+	(build-host)$ cp hw-description/<path_to_pld>/<proj>_pld.pdi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
+	(build-host)$ cat << _EOF >> conf/local.conf
+IMAGE_INSTALL:append = " versal-fw-demo"
+CUSTOMER_RECIPES:wr-amd-versal += 'versal-fw-demo'
+FW_DEMO_FILES:pn-versal-fw-demo = "pl.dtsi <proj>_pld.pdi"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
+
+The dtbo and pdi files can be found at the boards:
+	root@amd-versal:~# ls -l /lib/firmware/xilinx/versal-fw-demo/versal-fw-demo.*
+	-rw-r--r-- 1 root root    3825 Apr  5  2011 /lib/firmware/xilinx/versal-fw-demo/versal-fw-demo.dtbo
+	-rw-r--r-- 1 root root 1423280 Apr  5  2011 /lib/firmware/xilinx/versal-fw-demo/versal-fw-demo.pdi
+
+And these two files can be used to program PL by following the instructions
+in "7.4 PL Programming".
+
+XSCT Segment Configuration
+--------------------------
+For the XSCT segment configuration, the dtbo file has been installed to
+the first partition of the WIC image.
+	root@amd-versal:~# ls -l /boot/devicetree/*.dtbo
+
+The *_pld.pdi file can be found at:
+	<PROJECT_DIR>/build/tmp/work/amd_versal-wrs-linux/base-pdi/1.0+2025.1
+
+And these two files can be used to program PL by following the instructions
+in "7.4 PL Programming".
+
+7.4 PL Programming
+------------------
+In AMD Versal platforms, a segmented configuration is split into two
+or more PDI files: a smaller "boot PDI" and one or more "PL PDIs". The
+boot PDI is loaded first to bring up the processors (CIPS), memory (DDR),
+and the Network-on-Chip (NoC). The PL PDI, which contains the programmable
+logic configuration, is loaded on WRLinux.
+
+There are 3 methods to program PL from the Linux side:
+    - sysfs
+    - configfs
+    - fpgautil
+
+For a more detailed description of gen-machineconf, please see
+	https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/1188397412/Solution+Versal+PL+Programming
+
+7.4.1 Sysfs
+-----------
+Run the following commands to program PL with the PDI file via sysfs:
+
+	root@amd-versal:~# echo 0 > /sys/class/fpga_manager/fpga0/flags
+	root@amd-versal:~# mkdir -p /lib/firmware
+	root@amd-versal:~# cp <path_to_pdi/proj_pld.pdi> /lib/firmware/
+	root@amd-versal:~# echo proj.pdi > /sys/class/fpga_manager/fpga0/firmware
+
+7.4.2 Configfs
+--------------
+Run the following commands to program PL with the PDI file via configfs:
+
+	root@amd-versal:~# echo 0 > /sys/class/fpga_manager/fpga0/flags
+	root@amd-versal:~# mkdir -p /lib/firmware
+	root@amd-versal:~# cp <path_to_pdi/proj_pld.pdi> /lib/firmware/
+	root@amd-versal:~# cp <path_to_dtbo/pl.dtbo> /lib/firmware/
+	root@amd-versal:~# mkdir /sys/kernel/config/device-tree/overlays/system
+	root@amd-versal:~# cd /lib/firmware/
+	root@amd-versal:~# echo pl.dtbo > /sys/kernel/config/device-tree/overlays/system/path
+
+Steps to remove the drivers got added as part of DTO
+
+	root@amd-versal:~# mkdir /sys/kernel/config/device-tree/overlays/system
+
+7.4.3 Fpgautil
+--------------
+The fpgautil tool provides a user-friendly interface for loading,
+reconfiguring and reading FPGA bitstream configurations. Follow
+the steps to install this tool on WRLinux:
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+CUSTOMER_RECIPES:xilinx += 'fpga-manager-script'
+IMAGE_INSTALL:append = " fpga-manager-script"
+_EOF
+
+Run the following commands to program PL with the PDI file via fpgautil:
+    root@amd-versal:~# fpgautil -b <path_to_pdi/proj_pld.pdi> -o <path_to_dtbo/pl.dtbo>
