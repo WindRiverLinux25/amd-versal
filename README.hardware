@@ -67,7 +67,7 @@ the corresponding h/w features exist.
 		+ cpu-sleep-0
 	+ Suspend/Resume:
 		+ Suspend: Suspend-to-RAM
-		+ Resume: RTC/Serial/Network Wakeup Source
+		+ Resume: RTC/Serial Wakeup Source
 
   o Misc Devices
 	+ GPIO: PMC GPIO Controller

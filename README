@@ -303,6 +303,28 @@ Use the below example settings for configuring USB as MASS STORAGE profile to ve
 Connect the cable from board to Windows or Linux host machine, and the mass storage device
 can be observed.
 
+6.6 Suspend/Resume
+------------------
+6.6.1 Suspend
+-------------
+The Versal platforms support the following sleep states:
+    root@amd-versal:~# cat /sys/power/state
+    freeze mem
+
+Enter the "mem" sleep state:
+	root@amd-versal:~# echo mem > /sys/power/state
+
+6.6.2 Resume
+------------
+To wake up the system from sleep state, customers can use rtc or serial
+as a wakeup source.
+
+Run the following commands to enable the serial port as a wakeup source:
+    root@amd-versal:~# echo enabled > /sys/class/tty/ttyAMA0/power/wakeup
+
+Run the following commands to wake up the system after an 8-second sleep:
+    root@amd-versal:~# rtcwake -v -s 8 -m mem
+
 
 7 Xilinx Specific Features
 ==========================
