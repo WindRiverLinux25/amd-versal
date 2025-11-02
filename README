@@ -138,19 +138,93 @@ the WIC image.
 
 The system.dtb should be used as long as the system involves FPGA implementation.
 
-4.1 NFS boot
-------------
+4.2 Boot Mode
+-------------
+The Versal boards support three boot modes: SD card, QSPI32 and JTAG.
 
-4.1.1 Setup configuration your NFS TFTP server, and deploy the rootfs tarball
------------------------------------------------------------------------------
+4.2.1 SD Boot Mode
+------------------
+First refer to the section "7.1 BOOT.BIN" to build a bootable WIC
+image and burn it to SD card at host-pc:
 
-	(build-host)$ sudo tar jxf wrlinux-image-std-amd-versal.tar.bz2 -C <path_to_rootfs>
+   (build-host)$ sudo dd if=wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic of=/dev/sdaX
 
-4.1.2 Set the u-boot environment variables and boot from NFS
-------------------------------------------------------------
+Plug the SD card into the Versal board SD socket and set the DIP
+switch SW1 setting like:
 
-	(u-boot)> setenv bootargs console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused root=/dev/nfs rw nfsroot=serverip:<path_root_rootfs> ip=dhcp
-	(u-boot)> tftpboot 0x10000000 Image; tftpboot 0x13800000 dtb; booti 0x10000000 - 0x13800000
+   SW1[4]  SW1[3]  SW1[2]  SW1[1]
+   OFF     OFF     OFF     ON
+
+Poweron the Versal boards or press the POR button SW2.
+
+4.2.2 QSPI32 Boot Mode
+----------------------
+First we boot the board with SD Card by following the steps in the
+section "4.2.1 SD Boot Mode". At the U-Boot stage, when the message
+"Hit any key to stop autoboot:" appears, hit any key, then run the
+following commands to flash the images on the QSPI daughter card:
+
+   (u-boot)> sf probe 0 0 0
+   (u-boot)> sf erase 0x0 0x4000000
+   (u-boot)> fatls mmc 0:1
+   (u-boot)> fatload mmc 0:1 0x70000000 BOOT.bin
+   (u-boot)> sf write 0x70000000 0x0 <BOOT.BIN_filesize_in_hex>
+
+After flashing the images, turn off the power switch on the board,
+and change the SW1 boot mode pin settings to QSPI boot mode:
+
+   SW1[4]  SW1[3]  SW1[2]  SW1[1]
+   ON      ON      OFF     ON
+
+Power cycle the board. The board now boots up using the BOOT.BIN in
+the QSPI flash.
+
+4.2.3 JTAG Boot Mode
+--------------------
+The JTAG Boot Mode mainly uses xsct on host-pc and it is out of the
+scope of this README. Please refer to the following link or other
+documents:
+
+	https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/2037088327/Versal+Platform+Loader+and+Manager
+
+4.3 Boot Linux From U-Boot
+--------------------------
+This section provides the examples about how to setup u-boot to boot
+Linux via network and SD Card.
+
+4.3.1 Network
+-------------
+First you will need a host machine with the network servers TFTP and NFS
+correctly installed and configured.
+
+First find the compressed archive rootfs file at:
+	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.rootfs.tar.bz2
+
+Then extract this file to <nfsroot_path>:
+   (build-host)$ sudo tar jxf wrlinux-image-<rootfs_type>-amd-versal.rootfs.tar.bz2 -C <nfsroot_path>
+
+And copy the kernel and dtb file to <tftpserver_path>:
+   (build-host)$ cp Image <tftpserver_path>
+   (build-host)$ cp system.dtb <tftpserver_path>
+
+Set the u-boot environment variables and boot:
+   (u-boot)> setenv serverip <tftpserver_ip>; setenv ipaddr <board_ip>
+   (u-boot)> setenv bootargs console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused root=/dev/nfs rw nfsroot=$serverip:<nfsroot_path> ip=dhcp
+   (u-boot)> tftpboot 0x10000000 Image; tftpboot 0x13800000 system.dtb; booti 0x10000000 - 0x13800000
+
+4.3.2 SD Card
+-------------
+If DISTRO_FEATURES contains "xilinx-bootloader", there is a boot.scr that
+contains U-Boot commands to boot Linux from SD Card automatically. There
+is no need to reconfigure u-boot.
+
+If DISTRO_FEATURES does not contain "xilinx-bootloader", execute the following
+commands to set the u-boot environment variables and boot:
+   (u-boot)> setenv bootfile Image; setenv fdtfile dtb-file-name; setenv loadaddr 0x10000000; setenv fdtaddr 0x18800000;
+   (u-boot)> setenv bootargs 'root=/dev/mmcblk0p2 rw console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused rootwait'
+   (u-boot)> setenv bootcmd 'fatload mmc 0:1 $loadaddr $bootfile; fatload mmc 0:1 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr';
+   (u-boot)> saveenv; run bootcmd;
+
 
 5. WIC Notes
 ============
@@ -169,25 +243,12 @@ tmp/deploy/images/<bsp name>/, such as:
 	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic
 
 NOTE: The WIC image built in WRLinux don't contain the bootloader BOOT.BIN
-by default. Please refer to section 6 for the detailed description to create
-a bootable WIC image.
-
-5.1 Burn images to SD card
---------------------------
+by default. Please refer to the section 7.1 "BOOT.BIN" for the detailed
+description about how to create a bootable WIC image.
 
 To burn WIC image to SD card, user only need to execute the below command:
 
 	(build-host)$ sudo dd if=wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic of=/dev/your_sd_dev
-
-5.2 Boot the board from the WIC SD card
----------------------------------------
-
-The board can boot automatically by setting the following uboot environment variables:
-
-	(u-boot)> setenv bootfile Image; setenv fdtfile dtb-file-name; setenv loadaddr 0x10000000; setenv fdtaddr 0x18800000;
-	(u-boot)> setenv bootargs 'root=/dev/mmcblk0p2 rw console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused rootwait'
-	(u-boot)> setenv bootcmd 'fatload mmc 0:1 $loadaddr $bootfile; fatload mmc 0:1 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr';
-	(u-boot)> saveenv; run bootcmd;
 
 
 6. Features
