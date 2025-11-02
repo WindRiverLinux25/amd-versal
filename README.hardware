@@ -45,7 +45,7 @@ the corresponding h/w features exist.
 	+ LPDDR: 8GB LPDDR4 (4 x MT53D512M32D2DS)
 
   o Bus
-	+ I2C: On-Chip I2C Controller (Only i2c@ff030000)
+	+ I2C: On-Chip LPD I2C Controllers
 	+ QuadSPI: On-Chip Quad-SPI controller
 	+ USB 2.0: DWC3 USB Controller
 
@@ -86,7 +86,6 @@ The following features are not supported and not validated:
   x Counter: Triple-timer counter (TTC)
   x IOMMU: SMMU Memory Management (SMMU-500)
   x PCIe Endpoint 8-lane edge connector
-  x I2C: i2c@ff020000 I2C Controller
   x RNG: Versal TRNG
   x FMC: FMC+ Connector (PL-side)
   x HDMI: HDMI RX/TX Connector (PL-side)

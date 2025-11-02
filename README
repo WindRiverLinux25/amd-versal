@@ -286,15 +286,28 @@ to other parts of the system including the PMU, RPU, and APU processors.
 Customer could check the detail system monitor interfaces with below command:
 	root@amd-versal:~# ls -la /sys/bus/iio/devices/iio:device0
 
-6.3 QSPI
---------
+6.3 QSPI-NOR Flash
+------------------
+There is QSPI-NOR flash at the X-EBM-01 QSPI external daughter card, please make
+sure that the X-EBM-01 card is installed on J212 of the VCK190/VMK180 boards.
 
-There are QSPI NOR Flash at the X-EBM-01 QSPI external daughter card, please make sure that
-the X-EBM-01 card is installed on J212 of the VCK190/VMK180 boards. And should use the specific dtb
-file versal-vck190-rev1.1-x-ebm-01-revA.dtb for vck190 board or versal-vmk180-rev1.1-x-ebm-01-revA.dtb
-for VMK180 board which can be found at the path:
+If DISTRO_FEATURES contains "xilinx-bootloader", system.dtb has already contained
+the flash device node by following the commands in the sections "7.1 BOOT.BIN" and
+"7.2 Workflows".
 
+If DISTRO_FEATURES does not contain "xilinx-bootloader", the following dtb files
+should be used:
+	versal-vck190-rev1.1-x-ebm-01-revA.dtb (for vck190 board)
+	versal-vmk180-rev1.1-x-ebm-01-revA.dtb (for vmk180 board)
+
+They can be found at the path:
 	<PROJECT_DIR>/build/tmp-glibc/deploy/images/amd-versal/
+
+After Linux boot successfully, list recognized MTD devices to ensure the QSPI-NOR
+flash is present:
+	root@amd-versal:~# cat /proc/mtd
+	dev:    size   erasesize  name
+	mtd0: 10000000 00020000 "spi0-flash0"
 
 6.4 CANFD
 ---------
@@ -386,6 +399,25 @@ Run the following commands to enable the serial port as a wakeup source:
 Run the following commands to wake up the system after an 8-second sleep:
     root@amd-versal:~# rtcwake -v -s 8 -m mem
 
+6.7 LPD I2C
+-----------
+In SDK's board dts files, I2C devices are not described. This is because I2C
+buses on the Versal boards are designed that multiple masters have access to
+them. One way is from Versal and the second from System Controller.
+And because on I2C there are I2C muxes which are not safe for multiple masters
+access so the I2C buses are described only from System Controller's point of
+view. And it is up to user to decide if it is safe to enable the specific I2C
+devices and also it depends on tasks running on SC.
+
+For WRLinux, we have enabled the I2C device nodes in the kernel device trees
+and system.dtb by default. If customers want to disable these I2C devices,
+modifications on relevant board dts file will be required.
+
+For kernel device trees, the dts files enable I2C devices are located at:
+	<PROJECT_DIR>/build/tmp/work-shared/amd-versal/kernel-source/arch/arm64/boot/dts/xilinx
+
+For system.dtb, the dts files enable I2C devices are located at:
+	<PROJECT_DIR>/layers/amd-versal/recipes-bsp/device-tree/files
 
 7 Xilinx Specific Features
 ==========================
@@ -746,7 +778,7 @@ Run the following commands to program PL with the PDI file via configfs:
 
 Steps to remove the drivers got added as part of DTO
 
-	root@amd-versal:~# mkdir /sys/kernel/config/device-tree/overlays/system
+	root@amd-versal:~# rmdir /sys/kernel/config/device-tree/overlays/system
 
 7.4.3 Fpgautil
 --------------
