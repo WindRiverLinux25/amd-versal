@@ -1,0 +1,79 @@
+From 4bd6b118fa8590060280a2a5f4ce77fcbbbaa8e1 Mon Sep 17 00:00:00 2001
+From: Quanyang Wang <quanyang.wang@windriver.com>
+Date: Fri, 31 Oct 2025 11:40:19 +0800
+Subject: [PATCH] iio: versal-sysmon: Initialize the non-static sysfs attrs to
+ fix lockdep warning
+
+The commit 6992f5334995 ("sysfs: Use one lockdep class per sysfs
+attribute.") says that non-static sysfs attributes need to be initialized
+with sysfs_attr_init or sysfs_bin_attr_init when lockdep is enabled.
+
+Use sysfs_attr_init to initialize the non-static sysfs attrs to fix
+the following warning when CONFIG_DEBUG_LOCKDEP is enabled:
+
+    WARNING: CPU: 1 PID: 1 at kernel/locking/lockdep.c:4950 lockdep_init_map_type+0xfc/0x2a8
+    Modules linked in:
+    CPU: 1 UID: 0 PID: 1 Comm: swapper/0 Not tainted 6.12.55-yocto-preempt-rt #68
+    Hardware name: Xilinx Versal vmk180 Eval board rev1.1 (QSPI) (DT)
+    pstate: 60000005 (nZCv daif -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+    pc : lockdep_init_map_type+0xfc/0x2a8
+    lr : lockdep_init_map_type+0xfc/0x2a8
+    Call trace:
+    ......
+     lockdep_init_map_type+0xfc/0x2a8
+     __kernfs_create_file+0x84/0x148
+     sysfs_add_file_mode_ns+0x98/0x158
+     create_files+0xa8/0x1f8
+     internal_create_group+0x128/0x2c8
+     sysfs_create_group+0x20/0x38
+     sysmon_create_avg_en_sysfs_entries+0x208/0x278
+     sysmon_probe+0x214/0x410
+     platform_probe+0x70/0xd8
+     really_probe+0xe8/0x370
+     __driver_probe_device+0xa8/0x160
+     driver_probe_device+0x44/0x120
+     __driver_attach+0xb0/0x1d0
+     bus_for_each_dev+0x84/0xf0
+     driver_attach+0x2c/0x40
+     bus_add_driver+0x104/0x230
+     driver_register+0x64/0x138
+     __platform_driver_register+0x2c/0x40
+     sysmon_driver_init+0x24/0x38
+     do_one_initcall+0x64/0x198
+     do_initcalls+0xe4/0x150
+     kernel_init_freeable+0x1a8/0x280
+     kernel_init+0x2c/0x1f0
+     ret_from_fork+0x10/0x20
+    irq event stamp: 2486319
+    ---[ end trace 0000000000000000 ]---
+
+Upstream-Status: Submitted [https://lists.yoctoproject.org/g/linux-yocto/message/15903]
+Signed-off-by: Quanyang Wang <quanyang.wang@windriver.com>
+Signed-off-by: Bruce Ashfield <bruce.ashfield@gmail.com>
+---
+ drivers/iio/adc/versal-sysmon-core.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/iio/adc/versal-sysmon-core.c b/drivers/iio/adc/versal-sysmon-core.c
+index 634ddb18cbd7b..ef264cab82e27 100644
+--- a/drivers/iio/adc/versal-sysmon-core.c
++++ b/drivers/iio/adc/versal-sysmon-core.c
+@@ -896,6 +896,7 @@ int sysmon_create_avg_en_sysfs_entries(struct iio_dev *indio_dev)
+ 		sysmon->temp_avg_en_attrs[i].dev_attr.show = tempsat_avg_en_show;
+ 		sysmon->temp_avg_en_attrs[i].dev_attr.store = tempsat_avg_en_store;
+ 		sysmon->temp_avg_en_attrs[i].address = i;
++		sysfs_attr_init(&sysmon->temp_avg_en_attrs[i].dev_attr.attr);
+ 
+ 		/* Add all temp. sat averaging attrs to array of avg attributes */
+ 		sysmon->avg_attrs[i] =
+@@ -919,6 +920,7 @@ int sysmon_create_avg_en_sysfs_entries(struct iio_dev *indio_dev)
+ 		sysmon->supply_avg_en_attrs[i].dev_attr.show = supply_avg_en_show;
+ 		sysmon->supply_avg_en_attrs[i].dev_attr.store = supply_avg_en_store;
+ 		sysmon->supply_avg_en_attrs[i].address = supply_index;
++		sysfs_attr_init(&sysmon->supply_avg_en_attrs[i].dev_attr.attr);
+ 
+ 		sysmon->avg_attrs[SYSMON_TEMP_SAT_COUNT + i] =
+ 			&sysmon->supply_avg_en_attrs[i].dev_attr.attr;
+-- 
+2.43.0
+
