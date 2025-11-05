@@ -97,7 +97,7 @@ suitable for different scenarios.
 
 4.1.1 Kernel Device Trees
 -------------------------
-The kernel device tree files describes the Versal boards hardware features,
+The kernel device tree files describe the Versal board hardware features,
 except for FPGA implementations. In other words, these files are only used
 in scenarios without FPGA implementations.
 
@@ -155,7 +155,7 @@ switch SW1 setting like:
    SW1[4]  SW1[3]  SW1[2]  SW1[1]
    OFF     OFF     OFF     ON
 
-Poweron the Versal boards or press the POR button SW2.
+Power on the Versal boards or press the POR button SW2.
 
 4.2.2 QSPI32 Boot Mode
 ----------------------
@@ -169,6 +169,9 @@ following commands to flash the images on the QSPI daughter card:
    (u-boot)> fatls mmc 0:1
    (u-boot)> fatload mmc 0:1 0x70000000 BOOT.bin
    (u-boot)> sf write 0x70000000 0x0 <BOOT.BIN_filesize_in_hex>
+
+Note that the "<BOOT.BIN_filesize_in_hex>" is a hexadecimal value of
+the size of BOOT.BIN.
 
 After flashing the images, turn off the power switch on the board,
 and change the SW1 boot mode pin settings to QSPI boot mode:
@@ -229,7 +232,7 @@ commands to set the u-boot environment variables and boot:
 5. WIC Notes
 ============
 
-User can use the OpenEmbedded Image Creator to create the properly partitioned
+Users can use the OpenEmbedded Image Creator to create the properly partitioned
 image on a SD card. It generates partitioned images from existing OpenEmbedded
 build artifacts. Please refer to the following URL for more detailed partition
 information about WIC:
@@ -237,16 +240,16 @@ information about WIC:
 https://docs.yoctoproject.org/singleindex.html#creating-partitioned-images-using-wic
 
 This BSP supports disk images for SD card.
-After building the project, user will get a WIC image under the directory
+After building the project, users will get a WIC image under the directory
 tmp/deploy/images/<bsp name>/, such as:
 
 	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic
 
-NOTE: The WIC image built in WRLinux don't contain the bootloader BOOT.BIN
+NOTE: The WIC image built in WRLinux does not contain the bootloader BOOT.BIN
 by default. Please refer to the section 7.1 "BOOT.BIN" for the detailed
 description about how to create a bootable WIC image.
 
-To burn WIC image to SD card, user only need to execute the below command:
+To burn WIC image to SD card, users only needs to execute the below command:
 
 	(build-host)$ sudo dd if=wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic of=/dev/your_sd_dev
 
@@ -257,7 +260,7 @@ To burn WIC image to SD card, user only need to execute the below command:
 6.1 kexec and kdump
 -------------------
 
-You need to add feature/kexec support as follow:
+You need to add feature/kexec support as follows:
 	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
 	(build-host)$ cat << _EOF >> conf/local.conf
 WRTEMPLATE = "feature/kexec,feature/kdump"
@@ -280,10 +283,12 @@ Add crashkernel=512M to the kernel cmdline
 ------------------
 
 System monitor includes PL monitor and PS monitor.
-Each system monitor measures voltage and temperature to provide information and alarms
-to other parts of the system including the PMU, RPU, and APU processors.
+Each system monitor measures voltage and temperature to provide information
+and alarms to other parts of the system including the PMU, RPU, and APU
+processors.
 
-Customer could check the detail system monitor interfaces with below command:
+Customers can check the detailed system monitor interfaces with the following
+command:
 	root@amd-versal:~# ls -la /sys/bus/iio/devices/iio:device0
 
 6.3 QSPI-NOR Flash
@@ -303,7 +308,7 @@ should be used:
 They can be found at the path:
 	<PROJECT_DIR>/build/tmp-glibc/deploy/images/amd-versal/
 
-After Linux boot successfully, list recognized MTD devices to ensure the QSPI-NOR
+After Linux boots successfully, list recognized MTD devices to ensure the QSPI-NOR
 flash is present:
 	root@amd-versal:~# cat /proc/mtd
 	dev:    size   erasesize  name
@@ -312,8 +317,8 @@ flash is present:
 6.4 CANFD
 ---------
 
-There is one canfd device interface J5 at board. Connect the canfd interfaces of 2 boards and use
-the following verification commands:
+There is one canfd device interface J5 on the board. Connect the canfd interfaces
+of 2 boards and use the following verification commands:
 
 VCK190/VMK180 board-1:
 	root@amd-versal:~# ip link set can0 up type can bitrate 125000 dbitrate 8000000 fd on
@@ -390,7 +395,7 @@ Enter the "mem" sleep state:
 
 6.6.2 Resume
 ------------
-To wake up the system from sleep state, customers can use rtc or serial
+To wake up the system from sleep state, customers can use RTC or serial
 as a wakeup source.
 
 Run the following commands to enable the serial port as a wakeup source:
@@ -402,21 +407,21 @@ Run the following commands to wake up the system after an 8-second sleep:
 6.7 LPD I2C
 -----------
 In SDK's board dts files, I2C devices are not described. This is because I2C
-buses on the Versal boards are designed that multiple masters have access to
-them. One way is from Versal and the second from System Controller.
+buses on the Versal boards are designed so that multiple masters have access
+to them. One way is from Versal and the second from System Controller.
 And because on I2C there are I2C muxes which are not safe for multiple masters
 access so the I2C buses are described only from System Controller's point of
-view. And it is up to user to decide if it is safe to enable the specific I2C
-devices and also it depends on tasks running on SC.
+view. And it is up to the users to decide if it is safe to enable the specific
+I2C devices and also it depends on tasks running on SC.
 
 For WRLinux, we have enabled the I2C device nodes in the kernel device trees
 and system.dtb by default. If customers want to disable these I2C devices,
 modifications on relevant board dts file will be required.
 
-For kernel device trees, the dts files enable I2C devices are located at:
+For kernel device trees, the dts files enabling I2C devices are located at:
 	<PROJECT_DIR>/build/tmp/work-shared/amd-versal/kernel-source/arch/arm64/boot/dts/xilinx
 
-For system.dtb, the dts files enable I2C devices are located at:
+For system.dtb, the dts files enabling I2C devices are located at:
 	<PROJECT_DIR>/layers/amd-versal/recipes-bsp/device-tree/files
 
 7 Xilinx Specific Features
@@ -449,7 +454,7 @@ There are two ways to generate BOOT.BIN:
 
 7.1.1 Prebuilt Firmwares
 ------------------------
-If you just need a bootable BOOT.BIN to boot Linux, but don't want to compile
+If you just need a bootable BOOT.BIN to boot Linux, but do not want to compile
 it, you can use the prebuilt firmwares provided by AMD to generate one directly.
 The following example shows the steps for generating BOOT.BIN for vmk180. The
 steps for vck190 are very similar.
@@ -460,7 +465,7 @@ steps for vck190 are very similar.
 	(build-host)$ cd vmk180-versal
 	(build-host)$ bootgen -arch versal -image bootgen.bif -o ./BOOT.BIN -w
 
-The bootgen tool used above is in <path_to_Vivado>/bin/bootgen. If you don't
+The bootgen tool used above is in <path_to_Vivado>/bin/bootgen. If you do not
 have Vivado/Vitis installed, you can download the source code of bootgen, compile
 it, and then use it after installation.
 
@@ -609,7 +614,7 @@ the old project first:
 	(build-host)$ bitbake -c clean device-tree base-pdi psm-firmware plm-firmware
 	(build-host)$ rm conf/machine -Rf; rm output -Rf; rm conf/dts -Rf; rm hw-description -Rf
 	(build-host)$ sed -i '/WORKFLOW_MACHINE_NAME/d' conf/local.conf
-And after re-running the gen-machineconf command, don't forget to add
+And after re-running the gen-machineconf command, do not forget to add
 WORKFLOW_MACHINE_NAME back to conf/local.conf according to the type of
 XSA file.
 
@@ -620,7 +625,7 @@ description of the SDT workflow with Yocto, please see
 	https://github.com/Xilinx/meta-xilinx/blob/rel-v2025.1/meta-xilinx-standalone-sdt/README.sdt.bsp.md
 
 The System Device Tree Generator (SDTGen) is a tool designed by AMD to convert
-it’s proprietary output formats from the AMD Vivado Design Suite into a
+its proprietary output formats from the AMD Vivado Design Suite into a
 comprehensive system device tree.
 For a more detailed description of sdtgen, please see
 	https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/3156475927/Overview+of+System+Device+Tree+Generator+SDTGen
@@ -689,7 +694,7 @@ If you need to re-run gen-machineconf under an old project, you must clear
 the project first:
 	(build-host)$ rm conf/machine -Rf; rm output -Rf; rm conf/dts -Rf; rm hw-description -Rf
 	(build-host)$ sed -i '/WORKFLOW_MACHINE_NAME/d' conf/local.conf
-And after re-running the gen-machineconf command, don't forget to add
+And after re-running the gen-machineconf command, do not forget to add
 WORKFLOW_MACHINE_NAME back to conf/local.conf according to the type of
 XSA file.
 
@@ -727,8 +732,8 @@ The dtbo and pdi files can be found at the boards:
 And these two files can be used to program PL by following the instructions
 in "7.4 PL Programming".
 
-XSCT Segment Configuration
---------------------------
+7.3.2 XSCT Segment Configuration
+--------------------------------
 For the XSCT segment configuration, the dtbo file has been installed to
 the first partition of the WIC image.
 	root@amd-versal:~# ls -l /boot/devicetree/*.dtbo
@@ -752,7 +757,7 @@ There are 3 methods to program PL from the Linux side:
     - configfs
     - fpgautil
 
-For a more detailed description of gen-machineconf, please see
+For a more detailed description of PL programming, please see
 	https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/1188397412/Solution+Versal+PL+Programming
 
 7.4.1 Sysfs
