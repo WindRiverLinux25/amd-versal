@@ -799,3 +799,55 @@ _EOF
 
 Run the following commands to program PL with the PDI file via fpgautil:
     root@amd-versal:~# fpgautil -b <path_to_pdi/proj_pld.pdi> -o <path_to_dtbo/pl.dtbo>
+
+7.5 XRT
+-------
+Xilinx Runtime (XRT) is an open-source software stack designed to manage
+and utilize FPGAs and AI Engines (AIE) for accelerating compute-intensive
+applications. It provides a standardized software interface, including
+APIs and drivers, that acts as a low-level communication layer between
+Linux apps and the Versal boards.
+
+It consists of the following components:
+	- XRT Runtime Libraries
+	- ZOCL Driver
+	- Tools (xclbinutil, etc.)
+
+For a more detailed description of XRT, please see
+	https://xilinx.github.io/XRT/2025.1/html/index.html
+
+7.5.1 Building and Installation
+-------------------------------
+The building and installation of XRT are based on any one of the above sections:
+"7.1.2 WRLinux" or "7.2.2 XSCT Workflow" or "7.2.3 SDT Workflow". In other words,
+after completing the steps in any of the three chapters mentioned above, proceed
+with the next steps.
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+CUSTOMER_RECIPES:openembedded-layer += 'ocl-icd'
+CUSTOMER_RECIPES:openembedded-layer += 'rapidjson'
+CUSTOMER_RECIPES:xilinx += 'ai-engine-driver'
+CUSTOMER_RECIPES:xilinx += 'aiefal'
+CUSTOMER_RECIPES:xilinx += 'libdfx'
+CUSTOMER_RECIPES:xilinx += 'xrt'
+CUSTOMER_RECIPES:xilinx += 'zocl'
+DISTRO_FEATURES:append = " xrt"
+IMAGE_INSTALL:append = " xrt zocl"
+_EOF
+	(build-host)$ bitbake wrlinux-image-std
+
+7.5.2 Usage
+-----------
+This section only explains the usage of the XRT tool xclbinutils.
+ZOCL driver and XRT runtime libraries will be mentioned in the
+later section AIE.
+
+To report xclbin information:
+	root@amd-versal:~# xclbinutil --info --input a.xclbin
+
+To extract the bitstream image:
+	root@amd-versal:~# xclbinutil --dump-section BITSTREAM:RAW:bitstream.bit --input a.xclbin
+
+To extract the build metadata
+	root@amd-versal:~# xclbinutil --dump-section BUILD_METADATA:HTML:buildMetadata.json --input a.xclbin
