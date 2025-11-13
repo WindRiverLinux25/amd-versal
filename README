@@ -851,3 +851,58 @@ To extract the bitstream image:
 
 To extract the build metadata
 	root@amd-versal:~# xclbinutil --dump-section BUILD_METADATA:HTML:buildMetadata.json --input a.xclbin
+
+
+7.6 WRLinux Common Image
+------------------------
+AMD provides a common image package "xilinx-versal-common-v2025.1.tar.gz"
+that contains a prebuilt Linux kernel and root file system that can be
+used with the Versal board for embedded Vitis platform developers. And
+it is also required in the AI development process.
+
+WRLinux provides a mechanism to generate a similar package. Using this
+mechanism, customers can customize their own common image package.
+
+7.6.1 Building
+--------------
+The building of WRLinux Common Image is based on any one of above
+sections "7.1.2 WRLinux" or "7.2.2 XSCT Workflow" or "7.2.3 SDT
+Workflow". In other words, after completing the steps in any of
+the three chapters mentioned above, proceed with the next steps.
+
+	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
+	(build-host)$ cat << _EOF >> conf/local.conf
+CUSTOMER_RECIPES:wr-amd-versal += 'wrlinux-versal-common'
+_EOF
+	(build-host)$ bitbake wrlinux-versal-common
+
+After the bitbake command completes, the package will be found at:
+	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-versal-common-v2025.1.tar.gz
+
+7.6.2 Installation
+------------------
+Execute the following steps to install the WRLinux Common Image to
+the host-pc that has installed Vitis/Vivdao.
+
+	(build-host)$ tar xvf wrlinux-versal-common-v2025.1.tar.gz -C <your_sdk_path>
+
+The following steps are to install the SDK:
+
+	(build-host)$ sh <your_sdk_path>/wrlinux-versal-common-v2025.1/sdk.sh
+	Wind River Linux LTS SDK installer version 25.33
+	================================================
+	Enter target directory for SDK (default: /opt/windriver/wrlinux/25.33):<your_sdk_path>/wrlinux-versal-common-v2025.1
+	You are about to install the SDK to "<your_sdk_path>/wrlinux-versal-common-v2025.1". Proceed [Y/n]? Y
+	Extracting SDK.......................done
+	Setting it up...done
+	SDK has been successfully set up and is ready to be used.
+	Each time you wish to use the SDK in a new shell session, you need to source the environment setup script e.g.
+	$ . <your_sdk_path>/wrlinux-versal-common-v2025.1/environment-setup-cortexa72-cortexa53-wrs-linux
+
+Input the install path and press "Y" as shown in the demonstration above.
+Then check if all the files are correctly installed:
+
+	(build-host)$ ls <your_sdk_path>/wrlinux-versal-common-v2025.1/
+	bl31.elf	Image	rootfs.tar.gz	sysroots boot.scr	rootfs.ext4	sdk.sh	u-boot.elf
+	environment-setup-cortexa72-cortexa53-wrs-linux  rootfs.manifest	site-config-cortexa72-cortexa53-wrs-linux
+	version-cortexa72-cortexa53-wrs-linux
