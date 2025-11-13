@@ -906,3 +906,130 @@ Then check if all the files are correctly installed:
 	bl31.elf	Image	rootfs.tar.gz	sysroots boot.scr	rootfs.ext4	sdk.sh	u-boot.elf
 	environment-setup-cortexa72-cortexa53-wrs-linux  rootfs.manifest	site-config-cortexa72-cortexa53-wrs-linux
 	version-cortexa72-cortexa53-wrs-linux
+
+7.7 AI Engine
+-------------
+
+7.7.1 Using WRLinux Common Image
+--------------------------------
+In this flow, WRLinux will provide a common image "WRLinux Common Image"
+to help generate the final SD card image and the applications that run
+on PS. The following is a simplified flowchart for this flow.
+
+                           +----------------+  +---------------+  +---------------------+
+                           | PS application |  |    FPGA       |  | AI Engine Component |
+                           |                |  |               |  |                     |
+                           |    main.cpp    |  | HLS Component |  |  kern.cc adf.cxx    |
+                           +----------------+  +---------------+  +---------------------+
+                                   |                   |                    |
+  +--------------------+           |                   |                    |
+  |WRLinux Common Image|-----  SYSROOT (XRT)     v++ --mode hls        v++ --mode aie
+  +--------------------+         and GCC               |                    |
+                 |                 |               +---------+          +---------+
+                 |            +---------+          |kernel.xo|          |libadf.a |
+          +-------------+     |host.elf |          +---------+          +---------+
+          |boot.scr     |     +---------+               |                   |
+          |rootfs.tar.gz|          |                    |-------------------|
+          |Image        |          |                               |
+          |u-boot.elf   |          |                               |
+          |rootfs.ext4  |          |                            v++ --link
+          |bl31.elf     |          |                               |
+          +-------------+          |                               |
+                 |                 |                          +---------+
+                 |------------ v++ --package  --------------- |a.xclbin |
+                                   |                          +---------+
+                                   |
+                             +-------------+
+                             | sd_card.img |
+                             +-------------+
+
+To achieve the above process to utilize AI Engine, the following components
+are required:
+
+	- ZOCL: A GEM-style out-of-tree kernel driver (In rootfs)
+	- XRT: XRT Runtime Libraries and Management Tools (In rootfs)
+	- AIE: AI Engine kernel drivers (In Image)
+
+We need to generate and install a WRLinux common image by following the steps
+in "7.5 XRT" and "7.6 WRLinux Common Image".
+
+Next, we will use an example in Vitis-Tutorials to illustrate how to use the
+AI Engine.
+
+	(build-host)$ git clone -b 2025.1 https://github.com/Xilinx/Vitis-Tutorials.git
+	(build-host)$ cd Vitis-Tutorials/AI_Engine_Development/AIE/Design_Tutorials/01-aie_lenet_tutorial
+	(build-host)$ sed -i '/export COMMON_IMAGE_VERSAL/c\export COMMON_IMAGE_VERSAL=<your_sdk_path>/wrlinux-versal-common-v2025.1/' sample_env_setup.sh
+	(build-host)$ sed -i 's/environment-setup-cortexa72-cortexa53-amd-linux/environment-setup-cortexa72-cortexa53-wrs-linux/g' sample_env_setup.sh
+
+Additionally, it is necessary to configure the environment variables
+XILINX_VITIS and PLATFORM_REPO_PATHS correctly in sample_env_setup.sh
+based on the installation of Vitis in your host-pc.
+
+	(build-host)$ source sample_env_setup.sh
+	(build-host)$ make TARGET=hw all
+
+After the above commands complete successfully, an image "sd_card.img" is
+generated and we need to burn it to SD card at host-pc:
+
+	(build-host)$ sudo dd if=./build/lenet_x1/hw/package/sd_card.img of=/dev/sdaX
+
+Insert the SD card to the VCK190 board, power on the board, and wait for it
+to finish booting up the WRLinux, then log in the console.
+
+On the login console, execute the following commands to check if the ZOCL
+driver is correctly loaded:
+
+	root@amd-versal:~# ls -l /dev/dri/by-path/*
+	lrwxrwxrwx 1 root root  8 Nov 13 02:12 /dev/dri/by-path/platform-amba_pl:zyxclmm_drm-card -> ../card0
+	lrwxrwxrwx 1 root root 13 Nov 13 02:12 /dev/dri/by-path/platform-amba_pl:zyxclmm_drm-render -> ../renderD128
+
+Check the status of XRT libraries and Device:
+
+	root@amd-versal:~# xrt-smi examine
+	......
+	System Configuration
+	  OS Name              : Linux
+	  Release              : 6.12.55-yocto-standard
+	  Machine              : aarch64
+	  CPU Cores            : 2
+	  Memory               : 1692 MB
+	  Distribution         : Wind River Linux LTS 25.33 Update 3
+	  GLIBC                : 2.41
+	  Model                : Xilinx Versal vck190 Eval board rev1.1
+	  BIOS Vendor          : unknown
+	  BIOS Version         : unknown
+
+	XRT
+	  Version              : 2.19.0
+	  Branch               : 2025.1
+	  Hash                 : a9e65f10c3f0cac0f915060774a339ab7ecd5a97
+	  Hash Date            : 2025-08-13 15:08:47
+	  zocl                 : 2.19.0, a9e65f10c3f0cac0f915060774a339ab7ecd5a97
+	  Firmware Version     : N/A
+
+	Device(s) Present
+	|BDF             |Shell  |Logic UUID  |Device ID     |Device Ready*  |
+	|----------------|-------|------------|--------------|---------------|
+	|[0000:00:00.0]  |edge   |0x0         |user(inst=0)  |Yes            |
+
+Run the "lenet_aie_xrt" demo:
+
+	root@amd-versal:~# mount /dev/mmcblk0p1 /mnt
+	root@amd-versal:~# cd /mnt
+	root@amd-versal:~# ./lenet_aie_xrt.elf a.xclbin
+	Initializing ADF API...
+	Iteration : 1...
+	zocl-drm amba_pl:zyxclmm_drm: zocl_create_client: created KDS client for pid(559), ret: 0
+	zocl-drm amba_pl:zyxclmm_drm: zocl_destroy_client: client exits pid(559)
+	zocl-drm amba_pl:zyxclmm_drm: zocl_create_client: created KDS client for pid(559), ret: 0
+	[drm] Memory 0 is not reserved in device tree. Will allocate memory from CMA
+	[drm] Memory 3 is not reserved in device tree. Will allocate memory from CMA
+	[drm] AIE create successfully finished.
+	......
+	Pass for image 0
+	Pass for image 1
+	......
+	Pass for image 99
+	Releasing remaining XRT objects...
+	graph end
+	TEST PASSED

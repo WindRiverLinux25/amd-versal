@@ -69,6 +69,9 @@ the corresponding h/w features exist.
 		+ Suspend: Suspend-to-RAM
 		+ Resume: RTC/Serial Wakeup Source
 
+  o AI
+	+ Versal Adaptive SoC AI Engine (Only for XCVC1902)
+
   o Misc Devices
 	+ GPIO: PMC GPIO Controller
 	+ RTC: On-Chip Real Time Clock
@@ -92,9 +95,9 @@ The following features are not supported and not validated:
   x GEM IEEE 1588
   x zQSFP connector (PL-side)
   x zSFP/zSFP+ (1x2 stacked) connector (PL-side)
-  x AI Engine
   x EDAC: Xilinx DDR ECC controller
   x GPIO: PMC GPIO Controller
+  x Versal Deep Learning Processing Unit (DPU)
 
 4. BSP Notes
 ============
