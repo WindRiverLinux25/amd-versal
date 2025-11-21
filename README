@@ -839,18 +839,7 @@ _EOF
 
 7.5.2 Usage
 -----------
-This section only explains the usage of the XRT tool xclbinutils.
-ZOCL driver and XRT runtime libraries will be mentioned in the
-later section AIE.
-
-To report xclbin information:
-	root@amd-versal:~# xclbinutil --info --input a.xclbin
-
-To extract the bitstream image:
-	root@amd-versal:~# xclbinutil --dump-section BITSTREAM:RAW:bitstream.bit --input a.xclbin
-
-To extract the build metadata
-	root@amd-versal:~# xclbinutil --dump-section BUILD_METADATA:HTML:buildMetadata.json --input a.xclbin
+The usage of the XRT tools will be mentioned in the section "7.7 AI Engine".
 
 
 7.6 WRLinux Common Image
@@ -1033,3 +1022,12 @@ Run the "lenet_aie_xrt" demo:
 	Releasing remaining XRT objects...
 	graph end
 	TEST PASSED
+
+To report xclbin information:
+	root@amd-versal:~# xclbinutil --info --input a.xclbin
+
+To extract the bitstream image:
+	root@amd-versal:~# xclbinutil --dump-section BITSTREAM:RAW:bitstream.bit --input a.xclbin
+
+To extract the build metadata
+	root@amd-versal:~# xclbinutil --dump-section BUILD_METADATA:HTML:buildMetadata.json --input a.xclbin
