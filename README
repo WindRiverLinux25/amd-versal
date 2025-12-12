@@ -532,7 +532,7 @@ According to how the Programmable Logic (PL) portion of the XSA is
 structured and reconfigured, the XSA files can be divided into three
 types:
 	-Flat Configuration
-	-Segment Configuration
+	-Segmented Configuration
 	-Dynamic Function eXchange(DFX)
 Different XSA types will lead to different steps for each workflow.
 
@@ -601,7 +601,7 @@ WORKFLOW_MACHINE_NAME = "versal-vck190-xsct"
 _EOF
 	(build-host)$ bitbake wrlinux-image-std
 
-For the Segment Configuration XSA:
+For the Segmented Configuration XSA:
 	(build-host)$ gen-machineconf parse-xsa --hw-description <path_to_xsa-file/proj-seg.xsa> -c conf/ --machine-name versal-vck190-xsct-seg --add-config CONFIG_SUBSYSTEM_MACHINE_NAME=\"versal-vck190-reva-x-ebm-01-reva\" --add-config CONFIG_SUBSYSTEM_FPGA_MANAGER=y
 	(build-host)$ cat << _EOF >> conf/local.conf
 WORKFLOW_MACHINE_NAME = "versal-vck190-xsct-seg"
@@ -682,7 +682,7 @@ WORKFLOW_MACHINE_NAME = "versal-vck190-sdt"
 _EOF
 	(build-host)$ bitbake wrlinux-image-std
 
-For Segment Configuration
+For Segmented Configuration
 	(build-host)$ gen-machineconf parse-sdt --hw-description <path_to_dir/my-project-dir> -c conf/ --machine-name versal-vck190-sdt-seg --add-config CONFIG_SUBSYSTEM_MACHINE_NAME=\"versal-vck190-reva-x-ebm-01-reva\" -g full
 	(build-host)$ cat << _EOF >> conf/local.conf
 WORKFLOW_MACHINE_NAME = "versal-vck190-sdt-seg"
@@ -705,7 +705,7 @@ from the .dtbo file to the base device tree, then triggering drivers to be
 probed after PDI programming. So the dtbo file for PL needs to be installed
 to rootfs along with PDI files.
 
-7.3.1 SDT Segment Configuration
+7.3.1 SDT Segmented Configuration
 -------------------------------
 The recipe "versal-fw-demo" in the amd-versal bsp layer is used to install
 dtbo file to WRLinux by utilizing the bbclass "dfx_user_dts". For a more
@@ -732,9 +732,9 @@ The dtbo and pdi files can be found at the boards:
 And these two files can be used to program PL by following the instructions
 in "7.4 PL Programming".
 
-7.3.2 XSCT Segment Configuration
+7.3.2 XSCT Segmented Configuration
 --------------------------------
-For the XSCT segment configuration, the dtbo file has been installed to
+For the XSCT Segmented Configuration, the dtbo file has been installed to
 the first partition of the WIC image.
 	root@amd-versal:~# ls -l /boot/devicetree/*.dtbo
 
@@ -746,7 +746,7 @@ in "7.4 PL Programming".
 
 7.4 PL Programming
 ------------------
-In AMD Versal platforms, a segmented configuration is split into two
+In AMD Versal platforms, a Segmented Configuration is split into two
 or more PDI files: a smaller "boot PDI" and one or more "PL PDIs". The
 boot PDI is loaded first to bring up the processors (CIPS), memory (DDR),
 and the Network-on-Chip (NoC). The PL PDI, which contains the programmable
