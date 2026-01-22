@@ -3,8 +3,9 @@
 
 1. About this document
 ======================
-This document provides common and non-hardware specific information.
-Please refer to README.hardware for hardware specific information.
+
+This document provides common and non-hardware-specific information.
+Please refer to the README.hardware for hardware specific information.
 
 Dependencies
 ------------
@@ -25,15 +26,13 @@ This layer is maintained by Wind River Systems, Inc.
 Contact <support@windriver.com> or your support representative for more
 information on submitting changes.
 
-
 Building the versal layer
 -------------------------
 This layer and wrlinux layer should be added to bblayers.conf.
 
-
 License
 -------
-Copyright (C) 2025 Wind River Systems, Inc.
+Copyright (C) 2026 Wind River Systems, Inc.
 
 Source code included in the tree for individual recipes is under the LICENSE
 stated in the associated recipe (.bb file) unless otherwise stated.
@@ -58,6 +57,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
+
 2. BSP Kernel and Distros
 =========================
 
@@ -73,13 +73,14 @@ The following table summarizes the valid Wind River Linux distros for this BSP.
 For the supported kernel type for this BSP, check the TARGET_SUPPORTED_KTYPES
 by running 'bitbake -e | grep "^TARGET_SUPPORTED_KTYPES"'.
 
-Note: The preempt-rt ktype is available for this BSP/Machine at this time.
+Note: The preempt-rt kernel type can be used with this BSP/Machine.
+
 
 3. Board Specific Patches
 =========================
 
 To get a list of patches applied to the kernel specific to this BSP along with
-patch descriptions use git-whatchanged on the default kernel. For example:
+patch descriptions, use git-whatchanged on the default kernel. For example:
 
 	(build-host)$ cd <PROJECT_DIR>/build/tmp/work-shared/<bsp_name>/kernel-source
 	(build-host)$ git whatchanged <kernel_version>/standard/base..<kernel_version>/standard/<bsp_name>
@@ -90,37 +91,36 @@ patch descriptions use git-whatchanged on the default kernel. For example:
 
 4.1 Device Trees
 ----------------
-Now all Versal boards are required to use a device tree to boot Linux.
-Two types of device tree files are provided and different files are
-suitable for different scenarios.
+A device tree is a hierarchical data structure of named nodes and properties
+used to describe non-discoverable hardware in embedded systems, allowing
+the Linux kernel to support various configurations without hardcoding. It
+is written in text-based Device Tree Source (.dts) files, compiled into
+Device Tree Blob (.dtb) format, and passed to the operating system by the
+bootloader at runtime.
 
-4.1.1 Kernel Device Trees
--------------------------
-The kernel device tree files describe the Versal board hardware features,
-except for FPGA implementations. In other words, these files are only used
-in scenarios without FPGA implementations.
+The Versal boards are required to use the dtb files to boot Linux kernel.
+In this BSP, there are two types of device trees: kernel device tree and
+system device tree. They satisfy different development needs.
 
-The device tree files and their target boards are listed below:
+4.1.1 Kernel Device Tree
+------------------------
+The kernel device tree files describe the hardware components of the Versal
+boards, excluding the programming logic (PL). They provide the necessary
+information for Linux to understand and interact with the hardware, enabling
+the Linux kernel to load appropriate drivers and manage resources.
 
+The kernel device tree source files are located in
+	<PROJECT_DIR>/build/tmp/work-shared/amd-versal/kernel-source/arch/arm64/boot/dts/xilinx
+
+The following device tree files will be installed to the WIC image along
+with the kernel Image:
 	versal-vck190-rev1.1.dtb (used for vck190)
 	versal-vmk180-rev1.1.dtb (used for vmk180)
 	versal-vck190-rev1.1-x-ebm-01-revA.dtb (used for vck190 with X-EBM-01 daughter card)
 	versal-vmk180-rev1.1-x-ebm-01-revA.dtb (used for vmk180 with X-EBM-01 daughter card)
 
-They will be installed to <PROJECT_DIR>/build/tmp/deploy/images/amd-versal/
-and the first partition of the WIC image along with the kernel Image.
-
-The device tree source files are located at:
-	<PROJECT_DIR>/build/tmp/work-shared/amd-versal/kernel-source/arch/arm64/boot/dts/xilinx
-
-They can be modified and compiled by executing the following commands:
-	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
-	(build-host)$ bitbake -c devshell virtual/kernel
-	(build-host)$ vim arch/arm64/boot/dts/xilinx/the_file_you_edit*.dts
-	(build-host)$ make xilinx/dtb-file-name
-
-Then the new dtb files can be found at:
-	<PROJECT_DIR>/build/tmp/work/amd_versal-wrs-linux/linux-yocto/<kernel_version>/linux-amd_versal-standard-build/arch/arm64/boot/dts/xilinx/
+Note: These device tree files are only used in prebuilt firmware flow for
+their less device nodes.
 
 4.1.2 System Device Tree
 ------------------------
@@ -155,29 +155,29 @@ that you should use to boot Linux.
 
 4.2 Boot Mode
 -------------
-The Versal boards support three boot modes: SD card, QSPI32 and JTAG.
+The Versal boards support three boot modes: SD card, QSPI and JTAG.
 
 4.2.1 SD Boot Mode
 ------------------
-First refer to the section "7.1 BOOT.BIN" to build a bootable WIC
-image and burn it to SD card at host-pc:
+First refer to the section "7.1 BOOT.BIN" to build a bootable WIC image and
+burn it to SD card at host-pc:
 
    (build-host)$ sudo dd if=wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic of=/dev/sdaX
 
-Plug the SD card into the Versal board SD socket and set the DIP
-switch SW1 setting like:
+Plug the SD card into the Versal board SD socket and set the DIP switch SW1
+setting like:
 
    SW1[4]  SW1[3]  SW1[2]  SW1[1]
    OFF     OFF     OFF     ON
 
 Power on the Versal boards or press the POR button SW2.
 
-4.2.2 QSPI32 Boot Mode
-----------------------
-First we boot the board with SD Card by following the steps in the
-section "4.2.1 SD Boot Mode". At the U-Boot stage, when the message
-"Hit any key to stop autoboot:" appears, hit any key, then run the
-following commands to flash the images on the QSPI daughter card:
+4.2.2 QSPI Boot Mode
+--------------------
+First we boot the board with SD Card by following the steps in the section
+"4.2.1 SD Boot Mode". At the U-Boot stage, when the message "Hit any key to
+stop autoboot:" appears, hit any key, then run the following commands to
+burn the image to the QSPI flash:
 
    (u-boot)> sf probe 0 0 0
    (u-boot)> sf erase 0x0 0x4000000
@@ -185,59 +185,59 @@ following commands to flash the images on the QSPI daughter card:
    (u-boot)> fatload mmc 0:1 0x70000000 BOOT.bin
    (u-boot)> sf write 0x70000000 0x0 <BOOT.BIN_filesize_in_hex>
 
-Note that the "<BOOT.BIN_filesize_in_hex>" is a hexadecimal value of
-the size of BOOT.BIN.
+Note: The "<BOOT.BIN_filesize_in_hex>" is a hexadecimal value of the size
+of BOOT.BIN.
 
-After flashing the images, turn off the power switch on the board,
-and change the SW1 boot mode pin settings to QSPI boot mode:
+After flashing the images, turn off the power switch on the board, and
+change the SW1 boot mode pin settings to QSPI boot mode:
 
    SW1[4]  SW1[3]  SW1[2]  SW1[1]
    ON      ON      OFF     ON
 
-Power cycle the board. The board now boots up using the BOOT.BIN in
-the QSPI flash.
+Power cycle the board. The board now boots up using the BOOT.BIN in the
+QSPI flash.
 
 4.2.3 JTAG Boot Mode
 --------------------
-The JTAG Boot Mode mainly uses xsct on host-pc and it is out of the
-scope of this README. Please refer to the following link or other
-documents:
+The JTAG boot mainly communicates with XSDB and it is out of the scope of
+this README. Please refer to the following link or other documents:
 
-	https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/2037088327/Versal+Platform+Loader+and+Manager
+	https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/2037088327/Versal+Platform+Loader+and+Manager#In-JTAG-Boot-Mode
 
 4.3 Boot Linux From U-Boot
 --------------------------
-This section provides the examples about how to setup u-boot to boot
-Linux via network and SD Card.
+This section provides examples of how to set up U-Boot to boot Linux via
+network or SD Card.
 
 4.3.1 Network
 -------------
-First you will need a host machine with the network servers TFTP and NFS
+First, you need a host machine with the network servers TFTP and NFS
 correctly installed and configured.
 
-First find the compressed archive rootfs file at:
+Then find the compressed archive rootfs file at:
 	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.rootfs.tar.bz2
 
-Then extract this file to <nfsroot_path>:
+Extract this file to <nfsroot_path>:
    (build-host)$ sudo tar jxf wrlinux-image-<rootfs_type>-amd-versal.rootfs.tar.bz2 -C <nfsroot_path>
 
-And copy the kernel and dtb file to <tftpserver_path>:
+Copy the kernel and dtb file to <tftpserver_path>:
    (build-host)$ cp Image <tftpserver_path>
    (build-host)$ cp system.dtb <tftpserver_path>
 
-Set the u-boot environment variables and boot:
+Set the U-Boot environment variables and boot:
    (u-boot)> setenv serverip <tftpserver_ip>; setenv ipaddr <board_ip>
    (u-boot)> setenv bootargs console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused root=/dev/nfs rw nfsroot=$serverip:<nfsroot_path> ip=dhcp
-   (u-boot)> tftpboot 0x10000000 Image; tftpboot 0x13800000 system.dtb; booti 0x10000000 - 0x13800000
+   (u-boot)> tftpboot 0x10000000 Image; tftpboot 0x18800000 system.dtb; booti 0x10000000 - 0x18800000
 
 4.3.2 SD Card
 -------------
-If DISTRO_FEATURES contains "xilinx-bootloader", there is a boot.scr that
-contains U-Boot commands to boot Linux from SD Card automatically. There
-is no need to reconfigure u-boot.
+When the WIC image is built in the meta-amd-adaptive-socs-bsp or SDT flow,
+the U-Boot boot script boot.scr is installed. It contains U-Boot commands
+to boot Linux from SD Card automatically. There is no need to reconfigure
+U-Boot.
 
-If DISTRO_FEATURES does not contain "xilinx-bootloader", execute the following
-commands to set the u-boot environment variables and boot:
+If the WIC image is built in the prebuilt firmware flow, execute the
+following commands to set the U-Boot environment variables and boot:
    (u-boot)> setenv bootfile Image; setenv fdtfile dtb-file-name; setenv loadaddr 0x10000000; setenv fdtaddr 0x18800000;
    (u-boot)> setenv bootargs 'root=/dev/mmcblk0p2 rw console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused rootwait'
    (u-boot)> setenv bootcmd 'fatload mmc 0:1 $loadaddr $bootfile; fatload mmc 0:1 $fdtaddr $fdtfile; booti $loadaddr - $fdtaddr';
@@ -260,70 +260,77 @@ tmp/deploy/images/<bsp name>/, such as:
 
 	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic
 
-NOTE: The WIC image built in WRLinux does not contain the bootloader BOOT.BIN
-by default. Please refer to the section 7.1 "BOOT.BIN" for the detailed
+Note: The WIC image built in WRLinux does not contain the bootloader BOOT.BIN
+by default. Please refer to the section "7.1 BOOT.BIN" for the detailed
 description about how to create a bootable WIC image.
 
-To burn WIC image to SD card, users only needs to execute the below command:
+To burn WIC image to SD card, users only need to execute the below command:
 
 	(build-host)$ sudo dd if=wrlinux-image-<rootfs_type>-amd-versal.rootfs.wic of=/dev/your_sd_dev
 
 
-6. Features
-===========
+6. Common Features
+==================
 
-6.1 kexec and kdump
+6.1 Kexec/Kdump
 -------------------
-
-You need to add feature/kexec support as follows:
+To enable kexec and kdump features in WRLinux, run the following commands:
 	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
 	(build-host)$ cat << _EOF >> conf/local.conf
 WRTEMPLATE = "feature/kexec,feature/kdump"
 _EOF
 
-6.1.1 kexec
+6.1.1 Kexec
 -----------
+The kexec is a mechanism of the Linux kernel that allows booting of a new
+kernel from the currently running one.
 
+After booting up the first kernel successfully, execute the following
+commands to invoke the kexec system call to boot the second kernel:
 	root@amd-versal:~# kexec -l  /boot/Image --append="`cat /proc/cmdline`"
 	root@amd-versal:~# kexec -e
 
-6.1.2 kdump
+6.1.2 Kdump
 -----------
+The kdump is a feature of the Linux kernel that creates crash dumps in
+the event of a kernel crash.
 
-Add crashkernel=512M to the kernel cmdline
+The kdump feature requires a memory region for the capture kernel, so we
+need to add the string "crashkernel=512M" to kernel bootargs in U-Boot by
+using the following command:
+   (u-boot)> setenv bootargs $bootargs crashkernel=512M
+
+After booting up the first kernel successfully, executing the following
+commands to load the second kernel into the reserved memory region and
+to trigger a kernel crash:
 	root@amd-versal:~# kexec -p /boot/Image --append="$your-bootcmd"
 	root@amd-versal:~# echo c > /proc/sysrq-trigger
 
 6.2 System Monitor
 ------------------
-
 System monitor includes PL monitor and PS monitor.
 Each system monitor measures voltage and temperature to provide information
 and alarms to other parts of the system including the PMU, RPU, and APU
 processors.
 
-Customers can check the detailed system monitor interfaces with the following
+You can check the system monitor interfaces in detail with the following
 command:
 	root@amd-versal:~# ls -la /sys/bus/iio/devices/iio:device0
 
 6.3 QSPI-NOR Flash
 ------------------
-There is QSPI-NOR flash at the X-EBM-01 QSPI external daughter card, please make
-sure that the X-EBM-01 card is installed on J212 of the VCK190/VMK180 boards.
+The QSPI-NOR flash is located on the X-EBM-01 QSPI external daughter card,
+please make sure that the X-EBM-01 card is installed on J212 of boards.
 
-If DISTRO_FEATURES contains "xilinx-bootloader", system.dtb has already contained
-the flash device node by following the commands in the sections "7.1 BOOT.BIN" and
-"7.2 Workflows".
-
-If DISTRO_FEATURES does not contain "xilinx-bootloader", the following dtb files
-should be used:
+The flash device tree nodes are included in the following dtb files:
+	system.dtb
 	versal-vck190-rev1.1-x-ebm-01-revA.dtb (for vck190 board)
 	versal-vmk180-rev1.1-x-ebm-01-revA.dtb (for vmk180 board)
 
-They can be found at the path:
-	<PROJECT_DIR>/build/tmp-glibc/deploy/images/amd-versal/
+Please choose the appropriate dtb from above to boot the board according
+to the guide in the section "4.1 Device Trees".
 
-After Linux boots successfully, list recognized MTD devices to ensure the QSPI-NOR
+After Linux boots successfully, list recognized MTD devices to ensure the
 flash is present:
 	root@amd-versal:~# cat /proc/mtd
 	dev:    size   erasesize  name
@@ -331,9 +338,8 @@ flash is present:
 
 6.4 CANFD
 ---------
-
-There is one canfd device interface J5 on the board. Connect the canfd interfaces
-of 2 boards and use the following verification commands:
+There is one canfd device interface J5 on the board. Connect the canfd
+interfaces of 2 boards and use the following verification commands:
 
 VCK190/VMK180 board-1:
 	root@amd-versal:~# ip link set can0 up type can bitrate 125000 dbitrate 8000000 fd on
@@ -350,31 +356,31 @@ If can0 at board-1 can dump data from board-2, CANFD feature works fine.
 
 6.5 USB
 -------
-
-For VMK180/VCK190 board, the USB controller can be configured as host, device modes.
+For VMK180/VCK190 board, the USB controller can be configured as host and
+device modes.
 
 6.5.1 USB Host
 --------------
-
 For Host mode, short the jumper 1-2 of J308:
 	J308
 	1-2 3
 
 6.5.2 USB Device
 ----------------
-
-For Device mode, open the jumper 1-2 of J308:
+For Device mode, remove the jumper 1-2 of J308:
 	J308
 	1 2 3
 
-In addition to the method which modifies "dr_mode" property in dts file, you can change this property
-by using "fdt" u-boot command. The example for USB device mode is as described below:
+In addition to modifying "dr_mode" property in dts file, you can change
+this property by using the "fdt" U-Boot command. The USB device mode
+example is as follows:
 
     (u-boot)> tftpboot 0x10000000 Image; tftpboot 0x18800000 dtb
     (u-boot)> fdt addr 0x18800000; fdt resize; fdt set /axi/usb@ff9d0000/usb@fe200000 dr_mode peripheral
     (u-boot)> booti 0x10000000 - 0x18800000
 
-Use the below example settings for configuring USB as MASS STORAGE profile to verify the device mode:
+Use the example settings below for configuring USB as MASS STORAGE profile
+to verify the device mode:
 
 	root@amd-versal:~# dd if=/dev/zero of=/tmp/mydev count=500 bs=1M
 	root@amd-versal:~# cd /sys/kernel/config/usb_gadget
@@ -394,8 +400,8 @@ Use the below example settings for configuring USB as MASS STORAGE profile to ve
 	root@amd-versal:~# ln -s functions/mass_storage.ms0/ configs/c1.1/
 	root@amd-versal:~# echo "fe200000.usb" > UDC
 
-Connect the cable from board to Windows or Linux host machine, and the mass storage device
-can be observed.
+Connect the cable from board to Windows or Linux host machine, and the mass
+storage device can be observed.
 
 6.6 Suspend/Resume
 ------------------
@@ -411,9 +417,9 @@ Enter the "mem" sleep state:
 6.6.2 Resume
 ------------
 To wake up the system from sleep state, customers can use RTC or serial
-as a wakeup source.
+as a wake-up source.
 
-Run the following commands to enable the serial port as a wakeup source:
+Run the following commands to enable the serial port as a wake-up source:
     root@amd-versal:~# echo enabled > /sys/class/tty/ttyAMA0/power/wakeup
 
 Run the following commands to wake up the system after an 8-second sleep:
@@ -422,16 +428,16 @@ Run the following commands to wake up the system after an 8-second sleep:
 6.7 LPD I2C
 -----------
 In SDK's board dts files, I2C devices are not described. This is because I2C
-buses on the Versal boards are designed so that multiple masters have access
-to them. One way is from Versal and the second from System Controller.
-And because on I2C there are I2C muxes which are not safe for multiple masters
-access so the I2C buses are described only from System Controller's point of
-view. And it is up to the users to decide if it is safe to enable the specific
-I2C devices and also it depends on tasks running on SC.
+buses on the Versal boards are designed so that multiple masters (the Versal
+SoC and the System Controller ) have access to them. Because I2C buses have
+I2C muxes that are not safe for multiple master access, the I2C buses are
+described only from the System Controller's point of view. Users must decide
+if it is safe to enable the specific I2C devices and also it depends on tasks
+running on SC.
 
 For WRLinux, we have enabled the I2C device nodes in the kernel device trees
 and system.dtb by default. If customers want to disable these I2C devices,
-modifications on relevant board dts file will be required.
+modifications to the relevant board dts file will be required.
 
 For kernel device trees, the dts files enabling I2C devices are located at:
 	<PROJECT_DIR>/build/tmp/work-shared/amd-versal/kernel-source/arch/arm64/boot/dts/xilinx
@@ -853,21 +859,20 @@ WORKFLOW_MACHINE_NAME in conf/local.conf.
 -----------------------
 The Device Tree Overlay(DTO) is used to add the child nodes and the fragments
 from the .dtbo file to the base device tree, then triggering drivers to be
-probed after PDI programming. So the dtbo file for PL needs to be installed
-to rootfs along with PDI files.
+probed after PL programming. So the dtbo file for PL needs to be installed
+to rootfs along with PL firmwares (including Bitstream or PDI).
 
-7.2.1 SDT Segmented Configuration
----------------------------------
-The recipe "versal-fw-demo" in the amd-versal bsp layer is used to install
-dtbo file to WRLinux by utilizing the bbclass "dfx_user_dts". For a more
-detailed description of "dfx_user_dts", please see
-	https://github.com/Xilinx/meta-xilinx/blob/rel-v2025.1/docs/README.dfx.user.dts.md
+The recipe "versal-fw-demo" in the amd-versal BSP layer is designed to
+generate the dtbo file in WRLinux by utilizing the bbclass "dfx_user_dts".
+For a more detailed description of "dfx_user_dts", please see
+	https://github.com/Xilinx/meta-xilinx/blob/rel-v2025.2/docs/README.dfx.user.dts.md
 
-After running the steps in "7.1.4 SDT flow", execute the following commands:
+After running the steps in the section "7.1.4 SDT Flow", execute the
+following commands:
 
 	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
-	(build-host)$ cp conf/dts/versal-vmk180-sdt-seg/pl-overlay-full/pl.dtsi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
-	(build-host)$ cp hw-description/<path_to_pld>/<proj>_pld.pdi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
+	(build-host)$ cp conf/dts/<your_workflow_machine_name>/pl-overlay-full/pl.dtsi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
+	(build-host)$ cp hw-description/<your_workflow_machine_name>/<path_to_pld>/<proj>_pld.pdi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
 	(build-host)$ cat << _EOF >> conf/local.conf
 IMAGE_INSTALL:append = " versal-fw-demo"
 CUSTOMER_RECIPES:wr-amd-versal += 'versal-fw-demo'
@@ -880,17 +885,11 @@ The dtbo and pdi files can be found at the boards:
 	-rw-r--r-- 1 root root    3825 Apr  5  2011 /lib/firmware/xilinx/versal-fw-demo/versal-fw-demo.dtbo
 	-rw-r--r-- 1 root root 1423280 Apr  5  2011 /lib/firmware/xilinx/versal-fw-demo/versal-fw-demo.pdi
 
-And these two files can be used to program PL by following the instructions
-in "7.3 PL Programming".
+These files can be used to program PL by following the instructions in
+the section "7.3 PL Programming".
 
 7.3 PL Programming
 ------------------
-In AMD Versal platforms, a Segmented Configuration is split into two
-or more PDI files: a smaller "boot PDI" and one or more "PL PDIs". The
-boot PDI is loaded first to bring up the processors (CIPS), memory (DDR),
-and the Network-on-Chip (NoC). The PL PDI, which contains the programmable
-logic configuration, is loaded on WRLinux.
-
 There are 3 methods to program PL from the Linux side:
     - sysfs
     - configfs
@@ -901,16 +900,18 @@ For a more detailed description of PL programming, please see
 
 7.3.1 Sysfs
 -----------
-Run the following commands to program PL with the PDI file via sysfs:
+Run the following commands to program PL via sysfs:
 
 	root@amd-versal:~# echo 0 > /sys/class/fpga_manager/fpga0/flags
 	root@amd-versal:~# mkdir -p /lib/firmware
 	root@amd-versal:~# cp <path_to_pdi/proj_pld.pdi> /lib/firmware/
 	root@amd-versal:~# echo proj.pdi > /sys/class/fpga_manager/fpga0/firmware
 
+Note: The sysfs method only supports the PL programming without dtbo.
+
 7.3.2 Configfs
 --------------
-Run the following commands to program PL with the PDI file via configfs:
+Run the following commands to program PL via configfs:
 
 	root@amd-versal:~# echo 0 > /sys/class/fpga_manager/fpga0/flags
 	root@amd-versal:~# mkdir -p /lib/firmware
@@ -920,7 +921,7 @@ Run the following commands to program PL with the PDI file via configfs:
 	root@amd-versal:~# cd /lib/firmware/
 	root@amd-versal:~# echo pl.dtbo > /sys/kernel/config/device-tree/overlays/system/path
 
-Steps to remove the drivers got added as part of DTO
+Steps to remove the drivers that were added as part of DTO
 
 	root@amd-versal:~# rmdir /sys/kernel/config/device-tree/overlays/system
 
@@ -936,7 +937,7 @@ CUSTOMER_RECIPES:xilinx += 'fpga-manager-script'
 IMAGE_INSTALL:append = " fpga-manager-script"
 _EOF
 
-Run the following commands to program PL with the PDI file via fpgautil:
+Run the following commands to program PL via fpgautil:
     root@amd-versal:~# fpgautil -b <path_to_pdi/proj_pld.pdi> -o <path_to_dtbo/pl.dtbo>
 
 7.4 XRT
@@ -953,14 +954,14 @@ It consists of the following components:
 	- Tools (xclbinutil, etc.)
 
 For a more detailed description of XRT, please see
-	https://xilinx.github.io/XRT/2025.1/html/index.html
+	https://xilinx.github.io/XRT/2025.2/html/index.html
 
 7.4.1 Building and Installation
 -------------------------------
-The building and installation of XRT are based on any one of the above sections:
-"7.1.3 Meta-amd-adaptive-socs-bsp" or "7.1.4 SDT flow". In other words,
-after completing the steps in any of the three chapters mentioned above, proceed
-with the next steps.
+The building and installation of XRT are based on any one of the above
+sections: "7.1.3 Meta-amd-adaptive-socs-bsp" or "7.1.4 SDT Flow". In other
+words, after completing the steps in any of the two sections mentioned
+above, proceed with the next steps.
 
 	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
 	(build-host)$ cat << _EOF >> conf/local.conf
@@ -978,15 +979,14 @@ _EOF
 
 7.4.2 Usage
 -----------
-The usage of the XRT tools will be mentioned in the section "7.7 AI Engine".
-
+The usage of the XRT tools will be mentioned in the section "7.6 AI Engine".
 
 7.5 WRLinux Common Image
 ------------------------
-AMD provides a common image package "xilinx-versal-common-v2025.1.tar.gz"
-that contains a prebuilt Linux kernel and root file system that can be
-used with the Versal board for embedded Vitis platform developers. And
-it is also required in the AI development process.
+AMD provides a package named "xilinx-versal-common-v2025.2.tar.gz", which
+contains a prebuilt Linux kernel and root file system that can be used
+with the Versal board for embedded Vitis platform developers. It is also
+required in the AI development process.
 
 WRLinux provides a mechanism to generate a similar package. Using this
 mechanism, customers can customize their own common image package.
@@ -994,9 +994,9 @@ mechanism, customers can customize their own common image package.
 7.5.1 Building
 --------------
 The building of WRLinux Common Image is based on any one of above sections
-"7.1.3 Meta-amd-adaptive-socs-bsp" or "7.1.4 SDT flow". In other words,
-after completing the steps in any of the three chapters mentioned above,
-proceed with the next steps.
+"7.1.3 Meta-amd-adaptive-socs-bsp" or "7.1.4 SDT Flow". In other
+words, after completing the steps in any of the two sections mentioned
+above, proceed with the next steps.
 
 	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
 	(build-host)$ cat << _EOF >> conf/local.conf
@@ -1005,32 +1005,32 @@ _EOF
 	(build-host)$ bitbake wrlinux-versal-common
 
 After the bitbake command completes, the package will be found at:
-	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-versal-common-v2025.1.tar.gz
+	<PROJECT_DIR>/build/tmp/deploy/images/amd-versal/wrlinux-versal-common-v2025.2.tar.gz
 
 7.5.2 Installation
 ------------------
 Execute the following steps to install the WRLinux Common Image to
-the host-pc that has installed Vitis/Vivdao.
+the host-pc with Vitis/Vivado installed.
 
-	(build-host)$ tar xvf wrlinux-versal-common-v2025.1.tar.gz -C <your_sdk_path>
+	(build-host)$ tar xvf wrlinux-versal-common-v2025.2.tar.gz -C <your_sdk_path>
 
 The following steps are to install the SDK:
 
-	(build-host)$ sh <your_sdk_path>/wrlinux-versal-common-v2025.1/sdk.sh
+	(build-host)$ sh <your_sdk_path>/wrlinux-versal-common-v2025.2/sdk.sh
 	Wind River Linux LTS SDK installer version 25.33
 	================================================
-	Enter target directory for SDK (default: /opt/windriver/wrlinux/25.33):<your_sdk_path>/wrlinux-versal-common-v2025.1
-	You are about to install the SDK to "<your_sdk_path>/wrlinux-versal-common-v2025.1". Proceed [Y/n]? Y
+	Enter target directory for SDK (default: /opt/windriver/wrlinux/25.33):<your_sdk_path>/wrlinux-versal-common-v2025.2
+	You are about to install the SDK to "<your_sdk_path>/wrlinux-versal-common-v2025.2". Proceed [Y/n]? Y
 	Extracting SDK.......................done
 	Setting it up...done
 	SDK has been successfully set up and is ready to be used.
 	Each time you wish to use the SDK in a new shell session, you need to source the environment setup script e.g.
-	$ . <your_sdk_path>/wrlinux-versal-common-v2025.1/environment-setup-cortexa72-cortexa53-wrs-linux
+	$ . <your_sdk_path>/wrlinux-versal-common-v2025.2/environment-setup-cortexa72-cortexa53-wrs-linux
 
 Input the install path and press "Y" as shown in the demonstration above.
 Then check if all the files are correctly installed:
 
-	(build-host)$ ls <your_sdk_path>/wrlinux-versal-common-v2025.1/
+	(build-host)$ ls <your_sdk_path>/wrlinux-versal-common-v2025.2/
 	bl31.elf	Image	rootfs.tar.gz	sysroots boot.scr	rootfs.ext4	sdk.sh	u-boot.elf
 	environment-setup-cortexa72-cortexa53-wrs-linux  rootfs.manifest	site-config-cortexa72-cortexa53-wrs-linux
 	version-cortexa72-cortexa53-wrs-linux
@@ -1040,9 +1040,9 @@ Then check if all the files are correctly installed:
 
 7.6.1 Using WRLinux Common Image
 --------------------------------
-In this flow, WRLinux will provide a common image "WRLinux Common Image"
-to help generate the final SD card image and the applications that run
-on PS. The following is a simplified flowchart for this flow.
+This flow uses the WRLinux Common Image to help generate the final SD card
+image and the applications that run on PS. The following is a simplified
+flowchart for this flow.
 
                            +----------------+  +---------------+  +---------------------+
                            | PS application |  |    FPGA       |  | AI Engine Component |
@@ -1079,14 +1079,14 @@ are required:
 	- AIE: AI Engine kernel drivers (In Image)
 
 We need to generate and install a WRLinux common image by following the steps
-in "7.5 XRT" and "7.6 WRLinux Common Image".
+in "7.4 XRT" and "7.5 WRLinux Common Image".
 
 Next, we will use an example in Vitis-Tutorials to illustrate how to use the
 AI Engine.
 
-	(build-host)$ git clone -b 2025.1 https://github.com/Xilinx/Vitis-Tutorials.git
+	(build-host)$ git clone -b 2025.2 https://github.com/Xilinx/Vitis-Tutorials.git
 	(build-host)$ cd Vitis-Tutorials/AI_Engine_Development/AIE/Design_Tutorials/01-aie_lenet_tutorial
-	(build-host)$ sed -i '/export COMMON_IMAGE_VERSAL/c\export COMMON_IMAGE_VERSAL=<your_sdk_path>/wrlinux-versal-common-v2025.1/' sample_env_setup.sh
+	(build-host)$ sed -i '/export COMMON_IMAGE_VERSAL/c\export COMMON_IMAGE_VERSAL=<your_sdk_path>/wrlinux-versal-common-v2025.2/' sample_env_setup.sh
 	(build-host)$ sed -i 's/environment-setup-cortexa72-cortexa53-amd-linux/environment-setup-cortexa72-cortexa53-wrs-linux/g' sample_env_setup.sh
 
 Additionally, it is necessary to configure the environment variables
@@ -1117,22 +1117,22 @@ Check the status of XRT libraries and Device:
 	......
 	System Configuration
 	  OS Name              : Linux
-	  Release              : 6.12.55-yocto-standard
+	  Release              : 6.12.64-yocto-standard
 	  Machine              : aarch64
 	  CPU Cores            : 2
 	  Memory               : 1692 MB
-	  Distribution         : Wind River Linux LTS 25.33 Update 3
+	  Distribution         : Wind River Linux LTS 25.33 Update 5
 	  GLIBC                : 2.41
 	  Model                : Xilinx Versal vck190 Eval board rev1.1
 	  BIOS Vendor          : unknown
 	  BIOS Version         : unknown
 
 	XRT
-	  Version              : 2.19.0
-	  Branch               : 2025.1
-	  Hash                 : a9e65f10c3f0cac0f915060774a339ab7ecd5a97
-	  Hash Date            : 2025-08-13 15:08:47
-	  zocl                 : 2.19.0, a9e65f10c3f0cac0f915060774a339ab7ecd5a97
+	  Version              : 2.20.0
+	  Branch               : 2025.2
+	  Hash                 : 74dec3c9c4f6dd9bfb62ae11e71ec96bcc4859eb
+	  Hash Date            : 2025-11-11 22:38:22
+	  zocl                 : 2.20.0, a9e65f10c3f0cac0f915060774a339ab7ecd5a97
 	  Firmware Version     : N/A
 
 	Device(s) Present
