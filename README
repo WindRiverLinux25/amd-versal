@@ -743,6 +743,7 @@ section "7.1.4.3 SDTGen" before executing the following commands:
 
 	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
 	(build-host)$ cat << _EOF >> conf/local.conf
+BB_NO_NETWORK = '0'
 CUSTOMER_RECIPES:openembedded-layer += 'kconfig-frontends'
 CUSTOMER_RECIPES:meta-python += 'python3-humanfriendly'
 CUSTOMER_RECIPES:virtualization-layer += 'lopper'
@@ -800,7 +801,6 @@ After running the steps in the section "7.1.4.4 gen-machineconf", run the
 following steps to build a WRLinux image:
 
 	(build-host)$ cat << _EOF >> conf/local.conf
-BB_NO_NETWORK = '0'
 WORKFLOW_MACHINE_NAME = "<workflow_machine_name>"
 DISTRO_FEATURES:append = " xilinx-bootloader"
 PREFERRED_PROVIDER_u-boot-tools-native = "u-boot-tools-xlnx-native"
