@@ -765,7 +765,7 @@ and files will be generated under <PROJECT_DIR>/build:
 	conf/machine/<workflow_machine_name>.conf
 	conf/machine/include/<workflow_machine_name>/
 	conf/dts/<workflow_machine_name>/
-	hw-description/<workflow_machine_name>/
+	hw-description/
 	output/<workflow_machine_name>/
 
 You may observe the output below telling you to set "MACHINE" during
@@ -872,7 +872,7 @@ following commands:
 
 	(build-host)$ cd <PROJECT_DIR>; . ./environment-setup-x86_64-wrlinuxsdk-linux; . ./oe-init-build-env
 	(build-host)$ cp conf/dts/<your_workflow_machine_name>/pl-overlay-full/pl.dtsi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
-	(build-host)$ cp hw-description/<your_workflow_machine_name>/<path_to_pld>/<proj>_pld.pdi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
+	(build-host)$ cp hw-description/<path_to_pld>/<proj>_pld.pdi <PROJECT_DIR>/layers/amd-versal/recipes-firmware/versal-fw-demo/files
 	(build-host)$ cat << _EOF >> conf/local.conf
 IMAGE_INSTALL:append = " versal-fw-demo"
 CUSTOMER_RECIPES:wr-amd-versal += 'versal-fw-demo'
@@ -905,7 +905,7 @@ Run the following commands to program PL via sysfs:
 	root@amd-versal:~# echo 0 > /sys/class/fpga_manager/fpga0/flags
 	root@amd-versal:~# mkdir -p /lib/firmware
 	root@amd-versal:~# cp <path_to_pdi/proj_pld.pdi> /lib/firmware/
-	root@amd-versal:~# echo proj.pdi > /sys/class/fpga_manager/fpga0/firmware
+	root@amd-versal:~# echo <proj_pld.pdi> > /sys/class/fpga_manager/fpga0/firmware
 
 Note: The sysfs method only supports the PL programming without dtbo.
 
@@ -919,7 +919,7 @@ Run the following commands to program PL via configfs:
 	root@amd-versal:~# cp <path_to_dtbo/pl.dtbo> /lib/firmware/
 	root@amd-versal:~# mkdir /sys/kernel/config/device-tree/overlays/system
 	root@amd-versal:~# cd /lib/firmware/
-	root@amd-versal:~# echo pl.dtbo > /sys/kernel/config/device-tree/overlays/system/path
+	root@amd-versal:~# echo <pl.dtbo> > /sys/kernel/config/device-tree/overlays/system/path
 
 Steps to remove the drivers that were added as part of DTO
 
