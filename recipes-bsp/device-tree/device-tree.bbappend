@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend:amd-versal := "${THISDIR}/files:"
 
-EXTRA_DT_INCLUDE_FILES:append:amd-versal = " \
+EXTRA_DT_INCLUDE_FILES:append:amd-versal:aarch64 = " \
 	versal-i2c-dev.dtsi \
 	versal-wdt.dtsi \
 "
