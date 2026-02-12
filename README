@@ -361,14 +361,14 @@ device modes.
 
 6.5.1 USB Host
 --------------
-For Host mode, short the jumper 1-2 of J308:
-	J308
+For Host mode, short the jumper 1-2 of J300:
+	J300
 	1-2 3
 
 6.5.2 USB Device
 ----------------
-For Device mode, remove the jumper 1-2 of J308:
-	J308
+For Device mode, remove the jumper 1-2 of J300:
+	J300
 	1 2 3
 
 In addition to modifying "dr_mode" property in dts file, you can change
@@ -405,23 +405,26 @@ storage device can be observed.
 
 6.6 Suspend/Resume
 ------------------
-6.6.1 Suspend
--------------
 The Versal platforms support the following sleep states:
     root@amd-versal:~# cat /sys/power/state
     freeze mem
 
-Enter the "mem" sleep state:
-	root@amd-versal:~# echo mem > /sys/power/state
-
-6.6.2 Resume
-------------
-To wake up the system from sleep state, customers can use RTC or serial
+To wake up the system from sleep state, customers can use RTC or UART
 as a wake-up source.
 
-Run the following commands to enable the serial port as a wake-up source:
+6.6.1 UART
+----------
+Enable UART as a wake-up source:
     root@amd-versal:~# echo enabled > /sys/class/tty/ttyAMA0/power/wakeup
 
+Suspend the kernel:
+	root@amd-versal:~# echo mem > /sys/power/state
+
+Pressing a key on keyboard to generate a UART input will trigger the kernel
+to resume from the suspend mode.
+
+6.6.2 RTC
+---------
 Run the following commands to wake up the system after an 8-second sleep:
     root@amd-versal:~# rtcwake -v -s 8 -m mem
 
