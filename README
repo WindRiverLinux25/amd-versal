@@ -908,7 +908,7 @@ Run the following commands to program PL via sysfs:
 	root@amd-versal:~# echo 0 > /sys/class/fpga_manager/fpga0/flags
 	root@amd-versal:~# mkdir -p /lib/firmware
 	root@amd-versal:~# cp <path_to_pdi/proj_pld.pdi> /lib/firmware/
-	root@amd-versal:~# echo <proj_pld.pdi> > /sys/class/fpga_manager/fpga0/firmware
+	root@amd-versal:~# echo proj_pld.pdi > /sys/class/fpga_manager/fpga0/firmware
 
 Note: The sysfs method only supports the PL programming without dtbo.
 
@@ -922,7 +922,7 @@ Run the following commands to program PL via configfs:
 	root@amd-versal:~# cp <path_to_dtbo/pl.dtbo> /lib/firmware/
 	root@amd-versal:~# mkdir /sys/kernel/config/device-tree/overlays/system
 	root@amd-versal:~# cd /lib/firmware/
-	root@amd-versal:~# echo <pl.dtbo> > /sys/kernel/config/device-tree/overlays/system/path
+	root@amd-versal:~# echo pl.dtbo > /sys/kernel/config/device-tree/overlays/system/path
 
 Steps to remove the drivers that were added as part of DTO
 
@@ -1040,6 +1040,7 @@ Then check if all the files are correctly installed:
 
 7.6 AI Engine
 -------------
+Note: The AI Engine is available on the VCK190 board only.
 
 7.6.1 Using WRLinux Common Image
 --------------------------------
@@ -1173,3 +1174,10 @@ To extract the bitstream image:
 
 To extract the build metadata
 	root@amd-versal:~# xclbinutil --dump-section BUILD_METADATA:HTML:buildMetadata.json --input a.xclbin
+
+8. Known Issues
+===============
+
+8.1 GEM Suspend
+---------------
+The GEM MAC suspend/resume is not supported.
