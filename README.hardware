@@ -26,6 +26,10 @@ This BSP supports the following boards:
 			   Xilinx SDK 2025.01
   - 2025/11 (LINUXPG-2800): Wind River Linux LTS25 RCPL3: Add BSP support for Versal VMK180 based on
 			   Xilinx SDK 2025.01
+  - 2026/03 (LINUXEXEC-37105): Wind River Linux LTS25 RCPL7: Add BSP support for Versal VCK190 based on
+			   Xilinx SDK 2025.02
+  - 2026/03 (LINUXEXEC-37105): Wind River Linux LTS25 RCPL7: Add BSP support for Versal VMK180 based on
+			   Xilinx SDK 2025.02
 
 3. BSP Features
 ===============
