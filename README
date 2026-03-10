@@ -12,7 +12,6 @@ Dependencies
 This layer depends on the following layers supplied with Wind River Linux:
 	oe-core
 	wrlinux
-	meta-xilinx/meta-xilinx-bsp
 	meta-xilinx/meta-xilinx-core
 	meta-xilinx/meta-xilinx-standalone
 	meta-xilinx/meta-xilinx-standalone-sdt
